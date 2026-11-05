@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "MALA",
+    "slug": "mala-app",
+    "version": "1.0.0",
+    "description": "Digital Mala Counting, Personal Wallet, Secure Transfer & Spiritual Community Platform",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "mala",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FF7A00"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mala.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FF7A00"
+      },
+      "package": "com.mala.app",
+      "versionCode": 1,
+      "permissions": [
+        "VIBRATE",
+        "RECEIVE_BOOT_COMPLETED"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "mala-digital-app-2026"
+      }
+    }
+  }
+}
