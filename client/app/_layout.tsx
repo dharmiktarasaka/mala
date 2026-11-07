@@ -33,7 +33,8 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="transfer/send" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="chat" options={{ headerShown: false }} />
+          <Stack.Screen name="chat/index" options={{ headerShown: false }} />
+          <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="friends/index" options={{ headerShown: false }} />
           <Stack.Screen name="notifications/index" options={{ headerShown: false }} />
           <Stack.Screen name="subscription/index" options={{ presentation: 'modal' }} />

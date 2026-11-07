@@ -4,15 +4,23 @@ import axios from 'axios';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../store/authStore';
 
+const DEFAULT_PROD_API = 'https://mala-5maq.onrender.com/api/v1';
+const DEFAULT_PROD_SOCKET = 'https://mala-5maq.onrender.com';
+
 const resolveApiBase = () => {
   if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL) {
     const url = process.env.EXPO_PUBLIC_API_URL.trim().replace(/\/+$/, '');
     return url.endsWith('/api/v1') ? url : `${url}/api/v1`;
   }
+  // If running in browser on production domain (e.g. vercel.app), connect securely over HTTPS to live Render backend
   if (typeof window !== 'undefined' && window.location?.hostname) {
-    return `http://${window.location.hostname}:3000/api/v1`;
+    const host = window.location.hostname;
+    if (host !== 'localhost' && host !== '127.0.0.1') {
+      return DEFAULT_PROD_API;
+    }
+    return `http://${host}:3000/api/v1`;
   }
-  return 'http://localhost:3000/api/v1';
+  return DEFAULT_PROD_API;
 };
 
 const resolveSocketUrl = () => {
@@ -23,9 +31,13 @@ const resolveSocketUrl = () => {
     return process.env.EXPO_PUBLIC_API_URL.trim().replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '');
   }
   if (typeof window !== 'undefined' && window.location?.hostname) {
-    return `http://${window.location.hostname}:3000`;
+    const host = window.location.hostname;
+    if (host !== 'localhost' && host !== '127.0.0.1') {
+      return DEFAULT_PROD_SOCKET;
+    }
+    return `http://${host}:3000`;
   }
-  return 'http://localhost:3000';
+  return DEFAULT_PROD_SOCKET;
 };
 
 export const API_BASE_URL = resolveApiBase();
