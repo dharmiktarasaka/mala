@@ -16,7 +16,8 @@ export class MongoService implements OnModuleInit, OnModuleDestroy {
       this.configService.get<string>('MONGODB_URI') ||
       (this.configService.get<string>('DATABASE_URL')?.startsWith('mongodb')
         ? this.configService.get<string>('DATABASE_URL')
-        : null);
+        : null) ||
+      'mongodb+srv://dharmiktarasaka_db_user:18yfKRhHogmKHJtu@cluster0.iul7e85.mongodb.net/mala_db?retryWrites=true&w=majority';
 
     if (!rawUri) {
       this.logger.log('ℹ️ MONGODB_URI not configured. MongoDB integration is ready on-demand.');

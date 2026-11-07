@@ -32,5 +32,5 @@ services:
         sync: false
       # Connect your MongoDB Atlas URI
       - key: MONGODB_URI
-        sync: false
+        value: mongodb+srv://dharmiktarasaka_db_user:18yfKRhHogmKHJtu@cluster0.iul7e85.mongodb.net/mala_db?retryWrites=true&w=majority
 

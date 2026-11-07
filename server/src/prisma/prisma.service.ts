@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import * as fs from 'fs';
 import * as path from 'path';
+import mongoose from 'mongoose';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -77,6 +78,132 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     return false;
   }
 
+  public async loadFromMongo(): Promise<boolean> {
+    try {
+      if (mongoose.connection.readyState !== 1) {
+        return false;
+      }
+      const db = mongoose.connection.db;
+      if (!db) return false;
+
+      const collections = await db.listCollections().toArray();
+      const collNames = new Set(collections.map((c) => c.name));
+
+      // Load users
+      if (collNames.has('users')) {
+        const users = await db.collection('users').find({}).toArray();
+        for (const u of users) {
+          const docId = u.id || (u._id ? String(u._id) : null);
+          if (docId) {
+            this.memoryUsers.set(docId, { ...u, id: docId });
+          }
+        }
+        this.logger.log(`📦 Loaded ${this.memoryUsers.size} devotee accounts from MongoDB Atlas.`);
+      }
+
+      // Load user profiles
+      if (collNames.has('user_profiles')) {
+        const profiles = await db.collection('user_profiles').find({}).toArray();
+        for (const p of profiles) {
+          const key = p.userId || p.id || String(p._id);
+          this.memoryProfiles.set(key, { ...p, id: p.id || String(p._id) });
+        }
+      }
+
+      // Load wallets
+      if (collNames.has('wallets')) {
+        const wallets = await db.collection('wallets').find({}).toArray();
+        for (const w of wallets) {
+          const docId = w.id || String(w._id);
+          this.memoryWallets.set(docId, { ...w, id: docId });
+        }
+      }
+
+      // Load ledger accounts
+      if (collNames.has('ledger_accounts')) {
+        const accounts = await db.collection('ledger_accounts').find({}).toArray();
+        for (const acc of accounts) {
+          const docId = acc.id || String(acc._id);
+          this.memoryLedgerAccounts.set(docId, { ...acc, id: docId });
+        }
+      }
+
+      // Load transactions
+      if (collNames.has('ledger_transactions')) {
+        const txs = await db.collection('ledger_transactions').find({}).toArray();
+        for (const tx of txs) {
+          const docId = tx.id || String(tx._id);
+          this.memoryTransactions.set(docId, { ...tx, id: docId });
+        }
+      }
+
+      // Load practice statistics
+      if (collNames.has('practice_statistics')) {
+        const stats = await db.collection('practice_statistics').find({}).toArray();
+        for (const s of stats) {
+          const key = s.userId || s.id || String(s._id);
+          this.memoryStats.set(key, { ...s, id: s.id || String(s._id) });
+        }
+      }
+
+      // Load counter practice sessions
+      if (collNames.has('counter_sessions')) {
+        this.memorySessions = await db.collection('counter_sessions').find({}).toArray();
+      }
+
+      // Load posts
+      if (collNames.has('posts')) {
+        const posts = await db.collection('posts').find({}).toArray();
+        for (const p of posts) {
+          const docId = p.id || String(p._id);
+          this.memoryPosts.set(docId, { ...p, id: docId });
+        }
+      }
+
+      // Load subscriptions
+      if (collNames.has('subscriptions')) {
+        const subs = await db.collection('subscriptions').find({}).toArray();
+        for (const s of subs) {
+          const docId = s.id || String(s._id);
+          this.memorySubscriptions.set(docId, { ...s, id: docId });
+        }
+      }
+
+      return true;
+    } catch (err: any) {
+      this.logger.warn(`Could not load records from MongoDB Atlas: ${err.message}`);
+      return false;
+    }
+  }
+
+  public async saveToMongo(collectionName: string, id: string, doc: any) {
+    try {
+      if (mongoose.connection.readyState !== 1) return;
+      const db = mongoose.connection.db;
+      if (!db) return;
+      const cleanDoc = { ...doc };
+      delete cleanDoc._id;
+      await db.collection(collectionName).updateOne(
+        { id: id } as any,
+        { $set: cleanDoc, $setOnInsert: { id } },
+        { upsert: true }
+      );
+    } catch (err: any) {
+      this.logger.warn(`Failed to persist to MongoDB [${collectionName}]: ${err.message}`);
+    }
+  }
+
+  public async deleteFromMongo(collectionName: string, id: string) {
+    try {
+      if (mongoose.connection.readyState !== 1) return;
+      const db = mongoose.connection.db;
+      if (!db) return;
+      await db.collection(collectionName).deleteOne({ id } as any);
+    } catch (err: any) {
+      this.logger.warn(`Failed to delete from MongoDB [${collectionName}]: ${err.message}`);
+    }
+  }
+
   constructor() {
     super({
       log: ['error'],
@@ -89,9 +216,18 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       this.logger.log('✅ Connected to authoritative PostgreSQL database server.');
     } catch (err: any) {
       this.isOfflineMode = true;
-      this.logger.warn(`⚠️ PostgreSQL server offline (${err.message}). Activating Standalone In-Memory Devotee Ledger Mode.`);
+      this.logger.warn(`⚠️ PostgreSQL server offline (${err.message}). Activating MongoDB Atlas Cloud Persistence Mode.`);
       await this.seedInMemoryDatabase();
       this.attachInMemoryProxy();
+
+      // Attempt to load from MongoDB Atlas
+      await this.loadFromMongo();
+
+      // Whenever MongoDB connects or reconnects, synchronize records
+      mongoose.connection.on('connected', async () => {
+        this.logger.log('🔄 MongoDB Atlas connected. Synchronizing records with memory cache...');
+        await this.loadFromMongo();
+      });
     }
   }
 
@@ -156,24 +292,74 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           u = Array.from(self.memoryUsers.values()).find((x) => x.username?.toLowerCase() === target);
         }
         if (!u && where.phone) u = Array.from(self.memoryUsers.values()).find((x) => x.phone === where.phone);
+
+        // Fallback to MongoDB Atlas if not yet loaded into memory
+        if (!u && mongoose.connection.readyState === 1 && mongoose.connection.db) {
+          try {
+            const query: any = {};
+            if (where.id) query.$or = [{ id: where.id }, { _id: where.id }];
+            if (where.email) query.email = where.email.toLowerCase().trim();
+            if (where.username) query.username = where.username.toLowerCase().trim();
+            if (where.phone) query.phone = where.phone;
+            const dbDoc = await mongoose.connection.db.collection('users').findOne(query);
+            if (dbDoc) {
+              const docId = dbDoc.id || String(dbDoc._id);
+              u = { ...dbDoc, id: docId };
+              self.memoryUsers.set(docId, u);
+            }
+          } catch {}
+        }
+
         return enrichUser(u, include);
       },
       findFirst: async ({ where, include }: any) => {
+        let found = null;
         const users = Array.from(self.memoryUsers.values());
         for (const u of users) {
-          if (where.email && u.email?.toLowerCase() === where.email.toLowerCase().trim()) return enrichUser(u, include);
-          if (where.username && u.username?.toLowerCase() === where.username.toLowerCase().trim()) return enrichUser(u, include);
-          if (where.id && u.id === where.id) return enrichUser(u, include);
+          if (where.email && u.email?.toLowerCase() === where.email.toLowerCase().trim()) { found = u; break; }
+          if (where.username && u.username?.toLowerCase() === where.username.toLowerCase().trim()) { found = u; break; }
+          if (where.id && u.id === where.id) { found = u; break; }
           if (where.OR) {
             for (const cond of where.OR) {
-              if (cond.email && u.email?.toLowerCase() === cond.email.toLowerCase().trim()) return enrichUser(u, include);
-              if (cond.username && u.username?.toLowerCase() === cond.username.toLowerCase().trim()) return enrichUser(u, include);
-              if (cond.phone && u.phone === cond.phone) return enrichUser(u, include);
-              if (cond.id && u.id === cond.id) return enrichUser(u, include);
+              if (cond.email && u.email?.toLowerCase() === cond.email.toLowerCase().trim()) { found = u; break; }
+              if (cond.username && u.username?.toLowerCase() === cond.username.toLowerCase().trim()) { found = u; break; }
+              if (cond.phone && u.phone === cond.phone) { found = u; break; }
+              if (cond.id && u.id === cond.id) { found = u; break; }
             }
+            if (found) break;
           }
         }
-        return null;
+
+        // Direct MongoDB fallback lookup
+        if (!found && mongoose.connection.readyState === 1 && mongoose.connection.db) {
+          try {
+            const orList: any[] = [];
+            if (where.email) orList.push({ email: where.email.toLowerCase().trim() });
+            if (where.username) orList.push({ username: where.username.toLowerCase().trim() });
+            if (where.phone) orList.push({ phone: where.phone.trim() });
+            if (where.id) orList.push({ id: where.id });
+            if (where.OR) {
+              for (const cond of where.OR) {
+                if (cond.email) orList.push({ email: cond.email.toLowerCase().trim() });
+                if (cond.username) orList.push({ username: cond.username.toLowerCase().trim() });
+                if (cond.phone) orList.push({ phone: cond.phone.trim() });
+                if (cond.id) orList.push({ id: cond.id });
+              }
+            }
+            if (orList.length > 0) {
+              const dbDoc = await mongoose.connection.db.collection('users').findOne({ $or: orList });
+              if (dbDoc) {
+                const docId = dbDoc.id || String(dbDoc._id);
+                found = { ...dbDoc, id: docId };
+                self.memoryUsers.set(docId, found);
+              }
+            }
+          } catch (e: any) {
+            self.logger.warn(`Direct Mongo user lookup error: ${e.message}`);
+          }
+        }
+
+        return enrichUser(found, include);
       },
       findMany: async ({ where, include }: any) => {
         let users = Array.from(self.memoryUsers.values());
@@ -190,6 +376,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         const u = { id: `u-${Date.now()}-${Math.floor(Math.random() * 1000)}`, createdAt: new Date(), ...data };
         self.memoryUsers.set(u.id, u);
         self.saveToDisk();
+        self.saveToMongo('users', u.id, u);
         return u;
       },
       update: async ({ where, data }: any) => {
@@ -197,6 +384,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         if (u) {
           Object.assign(u, data);
           self.saveToDisk();
+          self.saveToMongo('users', u.id, u);
         }
         return u;
       },
@@ -208,6 +396,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         const p = { id: `p-${Date.now()}`, ...data };
         self.memoryProfiles.set(data.userId, p);
         self.saveToDisk();
+        self.saveToMongo('user_profiles', p.id, p);
         return p;
       },
       upsert: async ({ where, create, update }: any) => {
@@ -219,6 +408,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           self.memoryProfiles.set(where.userId, p);
         }
         self.saveToDisk();
+        self.saveToMongo('user_profiles', p.id, p);
         return p;
       },
       update: async ({ where, data }: any) => {
@@ -226,6 +416,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         if (p) {
           Object.assign(p, data);
           self.saveToDisk();
+          self.saveToMongo('user_profiles', p.id, p);
         }
         return p;
       },
@@ -237,6 +428,19 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         let w = null;
         if (where.userId) w = Array.from(self.memoryWallets.values()).find((x) => x.userId === where.userId);
         if (where.id) w = self.memoryWallets.get(where.id);
+        if (!w && mongoose.connection.readyState === 1 && mongoose.connection.db) {
+          try {
+            const query: any = {};
+            if (where.userId) query.userId = where.userId;
+            if (where.id) query.$or = [{ id: where.id }, { _id: where.id }];
+            const dbWallet = await mongoose.connection.db.collection('wallets').findOne(query);
+            if (dbWallet) {
+              const docId = dbWallet.id || String(dbWallet._id);
+              w = { ...dbWallet, id: docId };
+              self.memoryWallets.set(docId, w);
+            }
+          } catch {}
+        }
         if (!w) return null;
         const copy = { ...w };
         if (include?.user) {
@@ -251,6 +455,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         const w = { id: `w-${Date.now()}`, totalReceived: 0, totalSent: 0, totalEarned: 0, status: 'ACTIVE', ...data };
         self.memoryWallets.set(w.id, w);
         self.saveToDisk();
+        self.saveToMongo('wallets', w.id, w);
         return w;
       },
       update: async ({ where, data }: any) => {
@@ -260,6 +465,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         if (data.totalSent?.increment) w.totalSent += data.totalSent.increment;
         if (data.totalReceived?.increment) w.totalReceived += data.totalReceived.increment;
         self.saveToDisk();
+        self.saveToMongo('wallets', w.id, w);
         return w;
       },
     };
@@ -269,11 +475,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const acc = { id: `acc-${Date.now()}`, balance: 0, ...data };
         self.memoryLedgerAccounts.set(acc.id, acc);
+        self.saveToMongo('ledger_accounts', acc.id, acc);
         return acc;
       },
       update: async ({ where, data }: any) => {
         const acc = self.memoryLedgerAccounts.get(where.id);
-        if (acc) Object.assign(acc, data);
+        if (acc) {
+          Object.assign(acc, data);
+          self.saveToMongo('ledger_accounts', acc.id, acc);
+        }
         return acc;
       },
     };
@@ -316,11 +526,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const tx = { id: `tx-${Date.now()}-${Math.floor(Math.random() * 1000)}`, createdAt: new Date(), ...data };
         self.memoryTransactions.set(tx.id, tx);
+        self.saveToMongo('ledger_transactions', tx.id, tx);
         return tx;
       },
       update: async ({ where, data }: any) => {
         const tx = self.memoryTransactions.get(where.id);
-        if (tx) Object.assign(tx, data);
+        if (tx) {
+          Object.assign(tx, data);
+          self.saveToMongo('ledger_transactions', tx.id, tx);
+        }
         const sWallet = self.memoryWallets.get(tx.sourceWalletId);
         const tWallet = self.memoryWallets.get(tx.targetWalletId);
         return {
@@ -336,6 +550,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const e = { id: `entry-${Date.now()}`, createdAt: new Date(), ...data };
         self.memoryEntries.push(e);
+        self.saveToMongo('ledger_entries', e.id, e);
         return e;
       },
     };
@@ -346,6 +561,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const s = { id: `s-${Date.now()}`, ...data };
         self.memoryStats.set(data.userId, s);
+        self.saveToMongo('practice_statistics', s.id, s);
         return s;
       },
       upsert: async ({ where, create, update }: any) => {
@@ -360,6 +576,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           s = { id: `s-${Date.now()}`, ...create };
           self.memoryStats.set(where.userId, s);
         }
+        self.saveToMongo('practice_statistics', s.id, s);
         return s;
       },
       aggregate: async () => {
@@ -379,6 +596,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const s = { id: `sess-${Date.now()}`, ...data };
         self.memorySessions.push(s);
+        self.saveToMongo('counter_sessions', s.id, s);
         return s;
       },
       findMany: async ({ where }: any) => self.memorySessions.filter((s) => s.userId === where.userId),
@@ -397,6 +615,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       findUnique: async () => null,
       upsert: async ({ create }: any) => {
         self.memoryFriends.push(create);
+        self.saveToMongo('friends', `${create.userId}_${create.friendId}`, create);
         return create;
       },
       deleteMany: async ({ where }: any) => {
@@ -426,15 +645,20 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       upsert: async ({ create }: any) => {
         const req = { id: `req-${Date.now()}`, ...create };
         self.memoryFriendRequests.set(req.id, req);
+        self.saveToMongo('friend_requests', req.id, req);
         return req;
       },
       update: async ({ where, data }: any) => {
         const r = self.memoryFriendRequests.get(where.id);
-        if (r) Object.assign(r, data);
+        if (r) {
+          Object.assign(r, data);
+          self.saveToMongo('friend_requests', r.id, r);
+        }
         return r;
       },
       delete: async ({ where }: any) => {
         self.memoryFriendRequests.delete(where.id);
+        self.deleteFromMongo('friend_requests', where.id);
         return { id: where.id };
       },
       deleteMany: async () => ({ count: 1 }),
@@ -456,6 +680,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const p = { id: `post-${Date.now()}`, likesCount: 0, commentsCount: 0, createdAt: new Date(), ...data };
         self.memoryPosts.set(p.id, p);
+        self.saveToMongo('posts', p.id, p);
         return {
           ...p,
           user: enrichUser(self.memoryUsers.get(p.userId), { profile: true }),
@@ -468,11 +693,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           if (data.likesCount?.increment) p.likesCount += 1;
           if (data.likesCount?.decrement) p.likesCount = Math.max(0, p.likesCount - 1);
           if (data.commentsCount?.increment) p.commentsCount += 1;
+          self.saveToMongo('posts', p.id, p);
         }
         return p;
       },
       delete: async ({ where }: any) => {
         self.memoryPosts.delete(where.id);
+        self.deleteFromMongo('posts', where.id);
         return { id: where.id };
       },
     };
@@ -483,6 +710,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const l = { id: `like-${Date.now()}`, ...data };
         self.memoryLikes.set(l.id, l);
+        self.saveToMongo('likes', l.id, l);
         return l;
       },
       delete: async () => ({ count: 1 }),
@@ -493,6 +721,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const c = { id: `c-${Date.now()}`, createdAt: new Date(), ...data };
         self.memoryComments.set(c.id, c);
+        self.saveToMongo('comments', c.id, c);
         return {
           ...c,
           user: enrichUser(self.memoryUsers.get(c.userId), { profile: true }),
@@ -513,6 +742,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         const c = { id: `conv-${Date.now()}`, ...data };
         self.memoryConversations.set(key, c);
         self.memoryConversations.set(c.id, c);
+        self.saveToMongo('conversations', c.id, c);
         return c;
       },
       update: async () => ({}),
@@ -523,6 +753,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const m = { id: `msg-${Date.now()}`, createdAt: new Date(), ...data };
         self.memoryMessages.push(m);
+        self.saveToMongo('messages', m.id, m);
         return { ...m, sender: enrichUser(self.memoryUsers.get(m.senderId), { profile: true }) };
       },
       count: async () => 0,
@@ -536,6 +767,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const n = { id: `notif-${Date.now()}`, createdAt: new Date(), isRead: false, ...data };
         self.memoryNotifications.push(n);
+        self.saveToMongo('notifications', n.id, n);
         return n;
       },
       updateMany: async () => ({ count: 1 }),
@@ -560,6 +792,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const s = { id: `sub-${Date.now()}`, plan: 'FREE', status: 'ACTIVE', ...data };
         self.memorySubscriptions.set(s.id, s);
+        self.saveToMongo('subscriptions', s.id, s);
         return s;
       },
       count: async () => 1,
