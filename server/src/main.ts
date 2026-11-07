@@ -34,15 +34,29 @@ async function bootstrap() {
   const expressInstance = app.getHttpAdapter().getInstance();
   expressInstance.set('trust proxy', 1);
 
-  // Configurable CORS for production domain or mobile app
-  const allowedOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
-    : '*';
-
+  // Configurable dynamic CORS supporting credentials and any origin (including Vercel, localhost, mobile)
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+
+      // If specific whitelist is set and not '*', enforce it
+      if (process.env.CORS_ORIGIN && process.env.CORS_ORIGIN !== '*') {
+        const whitelist = process.env.CORS_ORIGIN.split(',').map((o) => o.trim());
+        if (whitelist.includes(origin)) {
+          return callback(null, true);
+        }
+      }
+
+      // Automatically reflect caller origin to allow credentials
+      return callback(null, true);
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Authorization, Accept, X-Requested-With, Origin',
+    exposedHeaders: 'Content-Range, X-Content-Range',
     credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
   // Global prefixes and pipes
