@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,9 @@ import {
   Switch,
   Alert,
   Platform,
+  RefreshControl,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../src/theme/colors';
 import { Header } from '../../src/components/Header';
@@ -20,22 +21,19 @@ import { apiClient } from '../../src/api/client';
 import { AchievementItem } from '../../src/types';
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, updateWalletBalance } = useAuthStore();
   const { mode, language, setLanguage, toggleTheme, t } = useThemeStore();
   const theme = Colors[mode];
 
   const { lifetimeTotal, streakDays } = useCounterStore();
   const [profileData, setProfileData] = useState<any>(null);
   const [achievements, setAchievements] = useState<AchievementItem[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Privacy toggles
   const [isPrivate, setIsPrivate] = useState(false);
   const [showMalaCount, setShowMalaCount] = useState(true);
   const [showWalletBalance, setShowWalletBalance] = useState(false);
-
-  useEffect(() => {
-    fetchProfileAndAchievements();
-  }, []);
 
   const fetchProfileAndAchievements = async () => {
     try {
@@ -46,6 +44,9 @@ export default function ProfileScreen() {
 
       if (profRes.data) {
         setProfileData(profRes.data);
+        if (profRes.data.wallet?.balance !== undefined) {
+          updateWalletBalance(profRes.data.wallet.balance);
+        }
         setIsPrivate(profRes.data.profile?.isPrivate || false);
         setShowMalaCount(profRes.data.profile?.showMalaCount ?? true);
         setShowWalletBalance(profRes.data.profile?.showWalletBalance ?? false);
@@ -56,6 +57,22 @@ export default function ProfileScreen() {
     } catch {
       // offline / mock fallback
     }
+  };
+
+  useEffect(() => {
+    fetchProfileAndAchievements();
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfileAndAchievements();
+    }, [])
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchProfileAndAchievements();
+    setRefreshing(false);
   };
 
   const handleUpdatePrivacy = async (
@@ -104,7 +121,16 @@ export default function ProfileScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Header title="Devotee Sanctuary" />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[Colors.primary]}
+          />
+        }
+      >
         {/* Profile Card */}
         <View style={[styles.profileCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.avatarLarge}>
@@ -161,6 +187,84 @@ export default function ProfileScreen() {
                 Friends
               </Text>
             </View>
+          </View>
+        </View>
+
+        {/* Sacred Mala Offerings & Balance Card */}
+        <View style={[styles.walletCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <View style={styles.walletHeader}>
+            <View style={styles.walletHeaderLeft}>
+              <View style={styles.walletIconCircle}>
+                <Ionicons name="sparkles" size={20} color={Colors.primary} />
+              </View>
+              <View>
+                <Text style={[styles.walletCardTitle, { color: theme.textPrimary }]}>
+                  Sacred Mala Offerings
+                </Text>
+                <Text style={[styles.walletCardSub, { color: theme.textSecondary }]}>
+                  Transferable Devotion & Blessings
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.balancePill}>
+              <Text style={styles.balancePillNumber}>
+                {profileData?.wallet?.balance ?? user?.walletBalance ?? 108}
+              </Text>
+              <Text style={styles.balancePillUnit}>Mala</Text>
+            </View>
+          </View>
+
+          {/* Offerings Stats Grid: Received vs Offered */}
+          <View style={[styles.walletStatsRow, { borderColor: theme.border }]}>
+            <View style={styles.walletStatItem}>
+              <View style={styles.walletStatHeader}>
+                <Ionicons name="arrow-down-circle" size={16} color="#10B981" />
+                <Text style={[styles.walletStatLabel, { color: theme.textSecondary }]}>
+                  Received
+                </Text>
+              </View>
+              <Text style={[styles.walletStatVal, { color: '#10B981' }]}>
+                +{profileData?.wallet?.totalReceived ?? 0} Mala
+              </Text>
+            </View>
+
+            <View style={styles.walletStatDivider} />
+
+            <View style={styles.walletStatItem}>
+              <View style={styles.walletStatHeader}>
+                <Ionicons name="arrow-up-circle" size={16} color={Colors.primary} />
+                <Text style={[styles.walletStatLabel, { color: theme.textSecondary }]}>
+                  Offered
+                </Text>
+              </View>
+              <Text style={[styles.walletStatVal, { color: Colors.primary }]}>
+                -{profileData?.wallet?.totalSent ?? 0} Mala
+              </Text>
+            </View>
+          </View>
+
+          {/* Action Buttons: Send Mala & Full Wallet */}
+          <View style={styles.walletActionsRow}>
+            <TouchableOpacity
+              style={styles.sendMalaButton}
+              onPress={() => router.push('/transfer/send' as any)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="gift-outline" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+              <Text style={styles.sendMalaButtonText}>Send Mala Offering</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.viewWalletButton, { borderColor: Colors.primary }]}
+              onPress={() => router.push('/(tabs)/wallet' as any)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="wallet-outline" size={16} color={Colors.primary} style={{ marginRight: 6 }} />
+              <Text style={[styles.viewWalletButtonText, { color: Colors.primary }]}>
+                Wallet & Ledger
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -547,6 +651,127 @@ const styles = StyleSheet.create({
   logoutText: {
     color: '#C62828',
     fontSize: 14,
+    fontWeight: '700',
+  },
+  walletCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 16,
+  },
+  walletHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  walletHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  walletIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#FFF4E6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  walletCardTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  walletCardSub: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+  balancePill: {
+    alignItems: 'flex-end',
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  balancePillNumber: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: Colors.primary,
+  },
+  balancePillUnit: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#9A3412',
+    textTransform: 'uppercase',
+  },
+  walletStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    paddingVertical: 10,
+    marginBottom: 14,
+  },
+  walletStatItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  walletStatHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
+  },
+  walletStatLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  walletStatVal: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  walletStatDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: '#EBE5DC',
+  },
+  walletActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  sendMalaButton: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 11,
+    borderRadius: 12,
+    shadowColor: Colors.primary,
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  sendMalaButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  viewWalletButton: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 11,
+    borderRadius: 12,
+  },
+  viewWalletButtonText: {
+    fontSize: 13,
     fontWeight: '700',
   },
 });

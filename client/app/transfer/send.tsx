@@ -29,6 +29,7 @@ export default function SendMalaScreen() {
   const [amount, setAmount] = useState('10');
   const [note, setNote] = useState('Sacred Sadhana Blessing 🙏');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Verification & Confirmation state
   const [previewData, setPreviewData] = useState<any>(null);
@@ -37,36 +38,53 @@ export default function SendMalaScreen() {
 
   const quickAmounts = [5, 10, 21, 51, 108];
 
+  const fetchLiveBalance = async () => {
+    try {
+      const res: any = await apiClient.get('/wallet/dashboard');
+      if (res.data?.balance !== undefined) {
+        updateWalletBalance(res.data.balance);
+      }
+    } catch {}
+  };
+
+  React.useEffect(() => {
+    fetchLiveBalance();
+  }, []);
+
   const handleVerifyRecipient = async () => {
+    setErrorMessage(null);
+    const cleanRecipient = recipient.replace(/^[#@]/, '').trim();
     const parsedAmount = parseInt(amount, 10);
-    if (!recipient.trim()) {
-      Alert.alert('Required', 'Please enter recipient Devotee Number or username');
+
+    if (!cleanRecipient) {
+      setErrorMessage('Please enter recipient 6-digit Devotee Number or username');
       return;
     }
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      Alert.alert('Invalid Amount', 'Please enter a valid whole number of Mala');
+      setErrorMessage('Please enter a valid whole number of Mala');
       return;
     }
 
     setLoading(true);
     try {
       const res: any = await apiClient.post('/wallet/verify-recipient', {
-        identifier: recipient.trim(),
+        identifier: cleanRecipient,
         amount: parsedAmount,
       });
 
       if (!res.data.canAfford) {
-        Alert.alert(
-          'Insufficient Balance',
-          `You have ${res.data.currentBalance} Mala, but tried to send ${parsedAmount} Mala.`,
-        );
+        const msg = `Insufficient Balance: You have ${res.data.currentBalance} Mala available, but tried to send ${parsedAmount} Mala.`;
+        setErrorMessage(msg);
+        Alert.alert('Insufficient Balance', msg);
         return;
       }
 
       setPreviewData(res.data);
       setShowConfirmModal(true);
     } catch (err: any) {
-      Alert.alert('Verification Failed', err.response?.data?.message || err.message);
+      const msg = err.response?.data?.message || err.message || 'Devotee verification failed';
+      setErrorMessage(msg);
+      Alert.alert('Verification Failed', msg);
     } finally {
       setLoading(false);
     }
@@ -75,13 +93,15 @@ export default function SendMalaScreen() {
   const handleExecuteTransfer = async () => {
     setShowConfirmModal(false);
     setLoading(true);
+    setErrorMessage(null);
 
     try {
+      const cleanRecipient = recipient.replace(/^[#@]/, '').trim();
       // Idempotency key to guarantee banking safety and prevent accidental double-submits
       const idempotencyKey = `tx-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
       const res: any = await apiClient.post('/wallet/transfer', {
-        recipientIdentifier: recipient.trim(),
+        recipientIdentifier: cleanRecipient,
         amount: parseInt(amount, 10),
         note: note.trim() || undefined,
         idempotencyKey,
@@ -93,7 +113,9 @@ export default function SendMalaScreen() {
       // Update local wallet balance state
       updateWalletBalance(receiptData.sender.remainingBalance);
     } catch (err: any) {
-      Alert.alert('Transfer Error', err.response?.data?.message || 'Transfer failed');
+      const msg = err.response?.data?.message || 'Transfer failed';
+      setErrorMessage(msg);
+      Alert.alert('Transfer Error', msg);
     } finally {
       setLoading(false);
     }
@@ -106,7 +128,9 @@ export default function SendMalaScreen() {
         showBack
         fallbackRoute="/(tabs)/wallet"
         onBack={() => {
-          if (router.canGoBack()) {
+          if (Platform.OS === 'web' && typeof window !== 'undefined' && window.history && window.history.length > 1) {
+            window.history.back();
+          } else if (router.canGoBack()) {
             router.back();
           } else {
             router.replace('/(tabs)/wallet');
@@ -121,9 +145,17 @@ export default function SendMalaScreen() {
             Your Transferable Mala Balance
           </Text>
           <Text style={[styles.balanceAmount, { color: Colors.primary }]}>
-            {user?.walletBalance ?? 100} <Text style={{ fontSize: 14 }}>Mala</Text>
+            {user?.walletBalance ?? 108} <Text style={{ fontSize: 14 }}>Mala</Text>
           </Text>
         </View>
+
+        {/* Real-time Inline Error Banner */}
+        {errorMessage ? (
+          <View style={styles.errorBanner}>
+            <Ionicons name="alert-circle" size={18} color="#DC2626" />
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
+        ) : null}
 
         {/* Input Form */}
         <View style={styles.form}>
@@ -337,15 +369,27 @@ export default function SendMalaScreen() {
               </View>
             )}
 
-            <TouchableOpacity
-              onPress={() => {
-                setReceipt(null);
-                router.replace('/(tabs)/wallet');
-              }}
-              style={styles.doneBtn}
-            >
-              <Text style={styles.doneBtnText}>View in Wallet</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setReceipt(null);
+                  router.replace('/(tabs)/profile');
+                }}
+                style={[styles.doneBtn, { flex: 1, backgroundColor: Colors.primary }]}
+              >
+                <Text style={styles.doneBtnText}>View on Profile</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  setReceipt(null);
+                  router.replace('/(tabs)/wallet');
+                }}
+                style={[styles.doneBtn, { flex: 1, backgroundColor: '#4B5563' }]}
+              >
+                <Text style={styles.doneBtnText}>View in Wallet</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -380,6 +424,24 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
     marginTop: 4,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  errorText: {
+    flex: 1,
+    color: '#B91C1C',
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 18,
   },
   form: {
     gap: 16,

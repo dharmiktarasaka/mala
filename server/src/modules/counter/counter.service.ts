@@ -122,6 +122,20 @@ export class CounterService {
       // 3. Trigger achievement evaluations
       await this.evaluatePracticeAchievements(tx, userId, updatedStats.lifetimeCount, newStreak);
 
+      // 4. Credit earned Mala to devotee wallet (1 Mala per 108 chants completed)
+      const earnedMala = Math.floor(dto.beadCount / 108) || (dto.completedTarget ? 1 : 0);
+      if (earnedMala > 0) {
+        try {
+          await tx.wallet.update({
+            where: { userId },
+            data: {
+              balance: { increment: earnedMala },
+              totalEarned: { increment: earnedMala },
+            },
+          });
+        } catch {}
+      }
+
       return {
         session,
         statistics: {

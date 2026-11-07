@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   RefreshControl,
   Share,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../src/theme/colors';
 import { Header } from '../../src/components/Header';
@@ -41,6 +41,9 @@ export default function WalletScreen() {
 
       if (walletRes.data) {
         setWallet(walletRes.data);
+        if (walletRes.data.balance !== undefined) {
+          useAuthStore.getState().updateWalletBalance(walletRes.data.balance);
+        }
       }
       if (txRes.data?.items) {
         setTransactions(txRes.data.items);
@@ -53,6 +56,12 @@ export default function WalletScreen() {
   useEffect(() => {
     fetchWalletAndTransactions();
   }, [filter]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchWalletAndTransactions();
+    }, [filter])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);

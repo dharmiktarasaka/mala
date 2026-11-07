@@ -59,7 +59,7 @@ export class LedgerService {
     }
 
     // 2. Identify Recipient
-    const cleanRecipientId = recipientIdentifier.trim();
+    const cleanRecipientId = recipientIdentifier.replace(/^[#@]/, '').trim();
     const recipientUser: any = await this.prisma.user.findFirst({
       where: {
         OR: [
@@ -76,7 +76,7 @@ export class LedgerService {
     });
 
     if (!recipientUser) {
-      throw new NotFoundException(`Recipient with ID or username '${recipientIdentifier}' not found`);
+      throw new NotFoundException(`Recipient devotee '${recipientIdentifier}' not found. Please verify the 6-digit Devotee Number or username.`);
     }
 
     if (recipientUser.id === senderUserId || recipientUser.devoteeId === senderUserId) {

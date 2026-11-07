@@ -344,8 +344,21 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       const copy = { ...u };
       if (include?.profile) copy.profile = self.memoryProfiles.get(u.id) || null;
       if (include?.wallet) {
-        const w = Array.from(self.memoryWallets.values()).find((item) => item.userId === u.id);
-        copy.wallet = w ? { ...w } : null;
+        let w = Array.from(self.memoryWallets.values()).find((item) => item.userId === u.id);
+        if (!w) {
+          w = {
+            id: `w-${u.id}`,
+            userId: u.id,
+            balance: 108,
+            totalReceived: 0,
+            totalSent: 0,
+            totalEarned: 108,
+            status: 'ACTIVE',
+            createdAt: new Date(),
+          };
+          self.memoryWallets.set(w.id, w);
+        }
+        copy.wallet = { ...w };
       }
       if (include?.practiceStatistics) copy.practiceStatistics = self.memoryStats.get(u.id) || null;
       if (include?._count) {
@@ -411,21 +424,25 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         return enrichUser(u, include);
       },
       findFirst: async ({ where, include }: any) => {
+        const cleanTerm = (val: any) => (val ? String(val).replace(/^[#@]/, '').trim() : '');
         let found = null;
         const users = Array.from(self.memoryUsers.values());
         for (const u of users) {
-          const uDevoteeId = String(u.devoteeId || u.id);
-          if (where.devoteeId && (uDevoteeId === String(where.devoteeId) || String(u.id) === String(where.devoteeId))) { found = u; break; }
-          if (where.email && u.email?.toLowerCase() === where.email.toLowerCase().trim()) { found = u; break; }
-          if (where.username && (u.username?.toLowerCase() === where.username.toLowerCase().trim() || uDevoteeId === where.username.trim())) { found = u; break; }
-          if (where.id && (u.id === where.id || uDevoteeId === String(where.id))) { found = u; break; }
+          const uDevoteeId = cleanTerm(u.devoteeId || u.id);
+          const uUsername = u.username ? u.username.toLowerCase().trim() : '';
+          const uEmail = u.email ? u.email.toLowerCase().trim() : '';
+
+          if (where.devoteeId && (uDevoteeId === cleanTerm(where.devoteeId) || cleanTerm(u.id) === cleanTerm(where.devoteeId))) { found = u; break; }
+          if (where.email && uEmail === cleanTerm(where.email).toLowerCase()) { found = u; break; }
+          if (where.username && (uUsername === cleanTerm(where.username).toLowerCase() || uDevoteeId === cleanTerm(where.username))) { found = u; break; }
+          if (where.id && (cleanTerm(u.id) === cleanTerm(where.id) || uDevoteeId === cleanTerm(where.id))) { found = u; break; }
           if (where.OR) {
             for (const cond of where.OR) {
-              if (cond.devoteeId && (uDevoteeId === String(cond.devoteeId) || String(u.id) === String(cond.devoteeId))) { found = u; break; }
-              if (cond.email && u.email?.toLowerCase() === cond.email.toLowerCase().trim()) { found = u; break; }
-              if (cond.username && (u.username?.toLowerCase() === cond.username.toLowerCase().trim() || uDevoteeId === cond.username.trim())) { found = u; break; }
-              if (cond.phone && u.phone === cond.phone) { found = u; break; }
-              if (cond.id && (u.id === cond.id || uDevoteeId === String(cond.id))) { found = u; break; }
+              if (cond.devoteeId && (uDevoteeId === cleanTerm(cond.devoteeId) || cleanTerm(u.id) === cleanTerm(cond.devoteeId))) { found = u; break; }
+              if (cond.email && uEmail === cleanTerm(cond.email).toLowerCase()) { found = u; break; }
+              if (cond.username && (uUsername === cleanTerm(cond.username).toLowerCase() || uDevoteeId === cleanTerm(cond.username))) { found = u; break; }
+              if (cond.phone && u.phone === cleanTerm(cond.phone)) { found = u; break; }
+              if (cond.id && (cleanTerm(u.id) === cleanTerm(cond.id) || uDevoteeId === cleanTerm(cond.id))) { found = u; break; }
             }
             if (found) break;
           }
@@ -550,7 +567,32 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             }
           } catch {}
         }
+        if (!w && where.userId) {
+          w = {
+            id: `w-${where.userId}`,
+            userId: where.userId,
+            balance: 108,
+            totalReceived: 0,
+            totalSent: 0,
+            totalEarned: 108,
+            status: 'ACTIVE',
+            createdAt: new Date(),
+          };
+          self.memoryWallets.set(w.id, w);
+          self.saveToDisk();
+          await self.saveToMongo('wallets', w.id, w);
+        }
         if (!w) return null;
+
+        // Auto-seed starter 108 Mala if uninitialized
+        if (w.balance === 0 && (!w.totalEarned || w.totalEarned === 0) && (!w.totalSent || w.totalSent === 0)) {
+          w.balance = 108;
+          w.totalEarned = 108;
+          self.memoryWallets.set(w.id, w);
+          self.saveToDisk();
+          await self.saveToMongo('wallets', w.id, w);
+        }
+
         const copy = { ...w };
         if (include?.user) {
           copy.user = enrichUser(self.memoryUsers.get(w.userId), include.user.include);
@@ -561,21 +603,61 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         return copy;
       },
       create: async ({ data }: any) => {
-        const w = { id: `w-${Date.now()}`, totalReceived: 0, totalSent: 0, totalEarned: 0, status: 'ACTIVE', ...data };
+        const w = { id: `w-${Date.now()}`, totalReceived: 0, totalSent: 0, totalEarned: 108, status: 'ACTIVE', balance: 108, ...data };
         self.memoryWallets.set(w.id, w);
         self.saveToDisk();
         await self.saveToMongo('wallets', w.id, w);
         return w;
       },
       update: async ({ where, data }: any) => {
-        const w = self.memoryWallets.get(where.id);
+        let w = where.id ? self.memoryWallets.get(where.id) : null;
+        if (!w && where.userId) {
+          w = Array.from(self.memoryWallets.values()).find((x) => x.userId === where.userId);
+        }
+        if (!w && mongoose.connection.readyState === 1 && mongoose.connection.db) {
+          try {
+            const query: any = {};
+            if (where.userId) query.userId = where.userId;
+            if (where.id) query.$or = [{ id: where.id }, { _id: where.id }];
+            const dbWallet = await mongoose.connection.db.collection('wallets').findOne(query);
+            if (dbWallet) {
+              const docId = dbWallet.id || String(dbWallet._id);
+              w = { ...dbWallet, id: docId };
+              self.memoryWallets.set(docId, w);
+            }
+          } catch {}
+        }
         if (!w) return null;
-        if (typeof data.balance === 'number') w.balance = data.balance;
-        if (data.totalSent?.increment) w.totalSent += data.totalSent.increment;
-        if (data.totalReceived?.increment) w.totalReceived += data.totalReceived.increment;
+
+        if (typeof data.balance === 'number') {
+          w.balance = data.balance;
+        } else if (data.balance?.increment) {
+          w.balance = (w.balance || 0) + data.balance.increment;
+        } else if (data.balance?.decrement) {
+          w.balance = Math.max(0, (w.balance || 0) - data.balance.decrement);
+        }
+
+        if (data.totalSent?.increment) {
+          w.totalSent = (w.totalSent || 0) + data.totalSent.increment;
+        } else if (typeof data.totalSent === 'number') {
+          w.totalSent = data.totalSent;
+        }
+
+        if (data.totalReceived?.increment) {
+          w.totalReceived = (w.totalReceived || 0) + data.totalReceived.increment;
+        } else if (typeof data.totalReceived === 'number') {
+          w.totalReceived = data.totalReceived;
+        }
+
+        if (data.totalEarned?.increment) {
+          w.totalEarned = (w.totalEarned || 0) + data.totalEarned.increment;
+        } else if (typeof data.totalEarned === 'number') {
+          w.totalEarned = data.totalEarned;
+        }
+
         self.saveToDisk();
         await self.saveToMongo('wallets', w.id, w);
-        return w;
+        return { ...w };
       },
     };
 

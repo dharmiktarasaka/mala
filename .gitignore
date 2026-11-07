@@ -33,6 +33,7 @@ Thumbs.db
 postgres_data/
 redis_data/
 server/data/
+data/
 backups/
 *.sql.gz
 

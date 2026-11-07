@@ -31,6 +31,13 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
+    let wallet = user.wallet;
+    if (!wallet) {
+      wallet = await this.prisma.wallet.findUnique({
+        where: { userId },
+      });
+    }
+
     return {
       id: user.id,
       devoteeId: (user as any).devoteeId || user.id,
@@ -42,20 +49,20 @@ export class UsersService {
       createdAt: user.createdAt,
       profile: user.profile,
       wallet: {
-        balance: user.wallet?.balance || 0,
-        totalReceived: user.wallet?.totalReceived || 0,
-        totalSent: user.wallet?.totalSent || 0,
-        totalEarned: user.wallet?.totalEarned || 0,
+        balance: wallet?.balance ?? 108,
+        totalReceived: wallet?.totalReceived ?? 0,
+        totalSent: wallet?.totalSent ?? 0,
+        totalEarned: wallet?.totalEarned ?? 108,
       },
       practiceStatistics: user.practiceStatistics,
-      subscription: user.subscriptions[0] || { plan: 'FREE', status: 'ACTIVE' },
-      friendsCount: user._count.friends,
-      postsCount: user._count.posts,
+      subscription: user.subscriptions?.[0] || { plan: 'FREE', status: 'ACTIVE' },
+      friendsCount: user._count?.friends ?? 0,
+      postsCount: user._count?.posts ?? 0,
     };
   }
 
   async getPublicProfile(viewerId: string, targetIdentifier: string) {
-    const cleanId = targetIdentifier.trim();
+    const cleanId = targetIdentifier.replace(/^[#@]/, '').trim();
     const targetUser: any = await this.prisma.user.findFirst({
       where: {
         OR: [
