@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors } from '../theme/colors';
@@ -9,12 +9,48 @@ import { OmSymbol } from './OmSymbol';
 interface HeaderProps {
   title?: string;
   showBack?: boolean;
+  onBack?: () => void;
+  fallbackRoute?: string;
   rightAction?: React.ReactNode;
 }
 
-export const Header: React.FC<HeaderProps> = ({ title, showBack, rightAction }) => {
+export const Header: React.FC<HeaderProps> = ({
+  title,
+  showBack,
+  onBack,
+  fallbackRoute = '/(tabs)/wallet',
+  rightAction,
+}) => {
   const { mode, language, setLanguage, toggleTheme, t } = useThemeStore();
   const theme = Colors[mode];
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+      return;
+    }
+
+    try {
+      if (router.canGoBack()) {
+        router.back();
+        return;
+      }
+    } catch {}
+
+    // On Web, try browser history back if available
+    if (
+      Platform.OS === 'web' &&
+      typeof window !== 'undefined' &&
+      window.history &&
+      window.history.length > 1
+    ) {
+      window.history.back();
+      return;
+    }
+
+    // Default safe fallback route
+    router.replace(fallbackRoute as any);
+  };
 
   const cycleLanguage = () => {
     if (language === 'en') setLanguage('hi');
@@ -27,18 +63,34 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack, rightAction }) 
   return (
     <View style={[styles.container, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
       <View style={styles.left}>
-        {showBack ? (
-          <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
+        {showBack && (
+          <TouchableOpacity
+            onPress={handleBack}
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            activeOpacity={0.7}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
           </TouchableOpacity>
-        ) : (
-          <View style={styles.brandRow}>
-            <OmSymbol size={18} badgeSize={32} />
-            <Text style={[styles.brandTitle, { color: Colors.primary }]}>
-              {title || t('appName')}
-            </Text>
-          </View>
         )}
+
+        <View style={styles.brandRow}>
+          {!showBack && <OmSymbol size={18} badgeSize={32} />}
+          <Text
+            style={[
+              styles.brandTitle,
+              {
+                color: showBack ? theme.textPrimary : Colors.primary,
+                fontSize: showBack ? 18 : 20,
+              },
+            ]}
+            numberOfLines={1}
+          >
+            {title || t('appName')}
+          </Text>
+        </View>
       </View>
 
       <View style={styles.right}>
@@ -127,6 +179,11 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: 6,
+  },
+  backButton: {
+    padding: 6,
+    marginRight: 8,
+    borderRadius: 8,
   },
 });
 

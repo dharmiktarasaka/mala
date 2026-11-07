@@ -101,7 +101,18 @@ export default function SendMalaScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Header title="Send Mala Offering" showBack />
+      <Header
+        title="Send Mala Offering"
+        showBack
+        fallbackRoute="/(tabs)/wallet"
+        onBack={() => {
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace('/(tabs)/wallet');
+          }
+        }}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         {/* Available Balance Reminder */}
