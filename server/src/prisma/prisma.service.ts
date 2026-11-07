@@ -275,6 +275,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       if (include?.subscriptions) {
         copy.subscriptions = Array.from(self.memorySubscriptions.values()).filter((s) => s.userId === u.id);
       }
+      if (!copy.devoteeId) {
+        if (/^\d{6,}$/.test(copy.id)) {
+          copy.devoteeId = copy.id;
+        } else {
+          const hashNum = Math.abs(String(copy.id).split('').reduce((acc: number, c: string) => acc * 31 + c.charCodeAt(0), 0));
+          copy.devoteeId = String((hashNum % 900000) + 100000);
+        }
+      }
       return copy;
     };
 
@@ -283,13 +291,20 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       findUnique: async ({ where, include }: any) => {
         let u = null;
         if (where.id) u = self.memoryUsers.get(where.id);
+        if (!u && where.devoteeId) {
+          u = Array.from(self.memoryUsers.values()).find(
+            (x) => String(x.devoteeId) === String(where.devoteeId) || String(x.id) === String(where.devoteeId),
+          );
+        }
         if (!u && where.email) {
           const target = where.email.toLowerCase().trim();
           u = Array.from(self.memoryUsers.values()).find((x) => x.email?.toLowerCase() === target);
         }
         if (!u && where.username) {
           const target = where.username.toLowerCase().trim();
-          u = Array.from(self.memoryUsers.values()).find((x) => x.username?.toLowerCase() === target);
+          u = Array.from(self.memoryUsers.values()).find(
+            (x) => x.username?.toLowerCase() === target || String(x.devoteeId) === target,
+          );
         }
         if (!u && where.phone) u = Array.from(self.memoryUsers.values()).find((x) => x.phone === where.phone);
 
@@ -297,7 +312,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         if (!u && mongoose.connection.readyState === 1 && mongoose.connection.db) {
           try {
             const query: any = {};
-            if (where.id) query.$or = [{ id: where.id }, { _id: where.id }];
+            if (where.id) query.$or = [{ id: where.id }, { _id: where.id }, { devoteeId: where.id }];
+            if (where.devoteeId) query.$or = [{ devoteeId: where.devoteeId }, { id: where.devoteeId }];
             if (where.email) query.email = where.email.toLowerCase().trim();
             if (where.username) query.username = where.username.toLowerCase().trim();
             if (where.phone) query.phone = where.phone;
@@ -316,15 +332,18 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         let found = null;
         const users = Array.from(self.memoryUsers.values());
         for (const u of users) {
+          const uDevoteeId = String(u.devoteeId || u.id);
+          if (where.devoteeId && (uDevoteeId === String(where.devoteeId) || String(u.id) === String(where.devoteeId))) { found = u; break; }
           if (where.email && u.email?.toLowerCase() === where.email.toLowerCase().trim()) { found = u; break; }
-          if (where.username && u.username?.toLowerCase() === where.username.toLowerCase().trim()) { found = u; break; }
-          if (where.id && u.id === where.id) { found = u; break; }
+          if (where.username && (u.username?.toLowerCase() === where.username.toLowerCase().trim() || uDevoteeId === where.username.trim())) { found = u; break; }
+          if (where.id && (u.id === where.id || uDevoteeId === String(where.id))) { found = u; break; }
           if (where.OR) {
             for (const cond of where.OR) {
+              if (cond.devoteeId && (uDevoteeId === String(cond.devoteeId) || String(u.id) === String(cond.devoteeId))) { found = u; break; }
               if (cond.email && u.email?.toLowerCase() === cond.email.toLowerCase().trim()) { found = u; break; }
-              if (cond.username && u.username?.toLowerCase() === cond.username.toLowerCase().trim()) { found = u; break; }
+              if (cond.username && (u.username?.toLowerCase() === cond.username.toLowerCase().trim() || uDevoteeId === cond.username.trim())) { found = u; break; }
               if (cond.phone && u.phone === cond.phone) { found = u; break; }
-              if (cond.id && u.id === cond.id) { found = u; break; }
+              if (cond.id && (u.id === cond.id || uDevoteeId === String(cond.id))) { found = u; break; }
             }
             if (found) break;
           }
@@ -335,15 +354,17 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           try {
             const orList: any[] = [];
             if (where.email) orList.push({ email: where.email.toLowerCase().trim() });
-            if (where.username) orList.push({ username: where.username.toLowerCase().trim() });
+            if (where.username) orList.push({ username: where.username.toLowerCase().trim() }, { devoteeId: where.username.trim() });
+            if (where.devoteeId) orList.push({ devoteeId: String(where.devoteeId) }, { id: String(where.devoteeId) });
             if (where.phone) orList.push({ phone: where.phone.trim() });
-            if (where.id) orList.push({ id: where.id });
+            if (where.id) orList.push({ id: where.id }, { devoteeId: String(where.id) });
             if (where.OR) {
               for (const cond of where.OR) {
                 if (cond.email) orList.push({ email: cond.email.toLowerCase().trim() });
-                if (cond.username) orList.push({ username: cond.username.toLowerCase().trim() });
+                if (cond.username) orList.push({ username: cond.username.toLowerCase().trim() }, { devoteeId: cond.username.trim() });
+                if (cond.devoteeId) orList.push({ devoteeId: String(cond.devoteeId) }, { id: String(cond.devoteeId) });
                 if (cond.phone) orList.push({ phone: cond.phone.trim() });
-                if (cond.id) orList.push({ id: cond.id });
+                if (cond.id) orList.push({ id: cond.id }, { devoteeId: String(cond.id) });
               }
             }
             if (orList.length > 0) {
@@ -373,7 +394,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         return users.length;
       },
       create: async ({ data }: any) => {
-        const u = { id: `u-${Date.now()}-${Math.floor(Math.random() * 1000)}`, createdAt: new Date(), ...data };
+        const devoteeNum = data.devoteeId || data.id || String(Math.floor(100000 + Math.random() * 900000));
+        const u = {
+          id: data.id || devoteeNum,
+          devoteeId: devoteeNum,
+          createdAt: new Date(),
+          ...data,
+        };
         self.memoryUsers.set(u.id, u);
         self.saveToDisk();
         self.saveToMongo('users', u.id, u);

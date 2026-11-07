@@ -44,10 +44,12 @@ export class WalletService {
     });
 
     // Generate unique QR code payload for receiving Mala
+    const devoteeId = (wallet.user as any).devoteeId || wallet.user.id;
     const qrPayload = JSON.stringify({
       scheme: 'mala',
       action: 'receive',
       userId: wallet.userId,
+      devoteeId,
       username: wallet.user.username,
       displayName: wallet.user.profile?.displayName,
     });
@@ -61,6 +63,7 @@ export class WalletService {
       status: wallet.status,
       username: wallet.user.username,
       displayName: wallet.user.profile?.displayName,
+      devoteeId,
       qrPayload,
       recentTransactions: recentTransactions.map((tx) =>
         this.formatTransactionSummary(tx, wallet.id),
@@ -78,14 +81,16 @@ export class WalletService {
       throw new NotFoundException('Sender wallet not found');
     }
 
-    const recipient = await this.prisma.user.findFirst({
+    const cleanId = dto.identifier.trim();
+    const recipient: any = await this.prisma.user.findFirst({
       where: {
         OR: [
-          { id: dto.identifier },
-          { username: dto.identifier.toLowerCase().trim() },
-          { phone: dto.identifier.trim() },
+          { id: cleanId },
+          { devoteeId: cleanId },
+          { username: cleanId.toLowerCase() },
+          { phone: cleanId },
         ],
-      },
+      } as any,
       include: {
         profile: true,
         wallet: true,
@@ -93,10 +98,10 @@ export class WalletService {
     });
 
     if (!recipient) {
-      throw new NotFoundException(`User '${dto.identifier}' not found`);
+      throw new NotFoundException(`Devotee with ID or username '${dto.identifier}' not found`);
     }
 
-    if (recipient.id === userId) {
+    if (recipient.id === userId || recipient.devoteeId === userId) {
       throw new BadRequestException('You cannot send Mala to yourself');
     }
 
@@ -110,6 +115,7 @@ export class WalletService {
     return {
       recipient: {
         userId: recipient.id,
+        devoteeId: recipient.devoteeId || recipient.id,
         username: recipient.username,
         displayName: recipient.profile?.displayName || recipient.username,
         avatarUrl: recipient.profile?.avatarUrl,

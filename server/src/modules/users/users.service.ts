@@ -33,6 +33,7 @@ export class UsersService {
 
     return {
       id: user.id,
+      devoteeId: (user as any).devoteeId || user.id,
       username: user.username,
       email: user.email,
       phone: user.phone,
@@ -54,13 +55,15 @@ export class UsersService {
   }
 
   async getPublicProfile(viewerId: string, targetIdentifier: string) {
-    const targetUser = await this.prisma.user.findFirst({
+    const cleanId = targetIdentifier.trim();
+    const targetUser: any = await this.prisma.user.findFirst({
       where: {
         OR: [
-          { id: targetIdentifier },
-          { username: targetIdentifier.toLowerCase().trim() },
+          { id: cleanId },
+          { devoteeId: cleanId },
+          { username: cleanId.toLowerCase() },
         ],
-      },
+      } as any,
       include: {
         profile: true,
         wallet: true,
@@ -106,6 +109,7 @@ export class UsersService {
 
     return {
       id: targetUser.id,
+      devoteeId: targetUser.devoteeId || targetUser.id,
       username: targetUser.username,
       displayName: profile?.displayName || targetUser.username,
       bio: profile?.bio,

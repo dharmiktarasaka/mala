@@ -50,17 +50,31 @@ export class AuthService {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(dto.password, salt);
 
+    // Generate unique 6-digit numeric Devotee ID (e.g. 108429, 582910)
+    let devoteeId = String(Math.floor(100000 + Math.random() * 900000));
+    for (let i = 0; i < 5; i++) {
+      const collision = await this.prisma.user.findFirst({
+        where: {
+          OR: [{ id: devoteeId }, { devoteeId }] as any,
+        },
+      });
+      if (!collision) break;
+      devoteeId = String(Math.floor(100000 + Math.random() * 900000));
+    }
+
     // Create user with atomic profile, wallet, ledger account, stats & subscription
-    const newUser = await this.prisma.$transaction(async (tx) => {
+    const newUser: any = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
+          id: devoteeId,
+          devoteeId,
           username: finalUsername,
           email: normalizedEmail,
           phone: dto.phone ? dto.phone.trim() : null,
           passwordHash,
           role: 'USER',
           status: 'ACTIVE',
-        },
+        } as any,
       });
 
       await tx.userProfile.create({
@@ -115,6 +129,7 @@ export class AuthService {
     return {
       user: {
         id: newUser.id,
+        devoteeId: newUser.devoteeId || newUser.id,
         username: newUser.username,
         email: newUser.email,
         phone: newUser.phone,
@@ -127,14 +142,16 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const identifier = dto.identifier.toLowerCase().trim();
-    const user = await this.prisma.user.findFirst({
+    const user: any = await this.prisma.user.findFirst({
       where: {
         OR: [
           { username: identifier },
           { email: identifier },
+          { devoteeId: dto.identifier.trim() },
+          { id: dto.identifier.trim() },
           { phone: dto.identifier.trim() },
         ],
-      },
+      } as any,
       include: {
         profile: true,
         wallet: true,
@@ -160,6 +177,7 @@ export class AuthService {
     return {
       user: {
         id: user.id,
+        devoteeId: user.devoteeId || user.id,
         username: user.username,
         email: user.email,
         phone: user.phone,

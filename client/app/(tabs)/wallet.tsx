@@ -60,10 +60,12 @@ export default function WalletScreen() {
     setRefreshing(false);
   };
 
+  const devoteeNumber = user?.devoteeId || wallet?.devoteeId || user?.id;
+
   const handleShareAccount = async () => {
     try {
       await Share.share({
-        message: `🕉️ Send me sacred Mala on the MALA App!\nMy Devotee Username: @${user?.username}\nUser ID: ${user?.id}`,
+        message: `🕉️ Send me sacred Mala on the MALA App!\nMy Devotee Number: #${devoteeNumber}\nUsername: @${user?.username}`,
       });
     } catch {}
   };
@@ -88,6 +90,7 @@ export default function WalletScreen() {
           totalReceived={wallet?.totalReceived}
           totalSent={wallet?.totalSent}
           username={user?.username}
+          devoteeId={devoteeNumber}
           onReceivePress={() => setShowQrModal(true)}
         />
 
@@ -167,16 +170,19 @@ export default function WalletScreen() {
                 <Ionicons name="qr-code-outline" size={160} color={Colors.primaryDark} />
               </View>
               <Text style={styles.qrUsername}>@{user?.username}</Text>
-              <Text style={styles.qrUserId}>ID: {user?.id}</Text>
+              <View style={styles.qrIdContainer}>
+                <Text style={styles.qrIdLabel}>Devotee Number</Text>
+                <Text style={styles.qrDevoteeNumber}>#{devoteeNumber}</Text>
+              </View>
             </View>
 
             <Text style={[styles.qrInstructions, { color: theme.textSecondary }]}>
-              Scan this code or share your devotee username to receive Mala from friends.
+              Share your 6-digit Devotee Number or username to receive Mala blessings from friends.
             </Text>
 
             <TouchableOpacity onPress={handleShareAccount} style={styles.shareBtn}>
               <Ionicons name="share-outline" size={18} color="#FFFFFF" />
-              <Text style={styles.shareBtnText}>Share My Devotee ID</Text>
+              <Text style={styles.shareBtnText}>Share My Devotee Number</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -354,10 +360,27 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: Colors.primaryDark,
   },
-  qrUserId: {
-    fontSize: 11,
-    color: '#6B7280',
-    marginTop: 2,
+  qrIdContainer: {
+    backgroundColor: '#FFF2E0',
+    borderWidth: 1,
+    borderColor: '#FDBA74',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginTop: 6,
+    alignItems: 'center',
+  },
+  qrIdLabel: {
+    fontSize: 10,
+    color: '#9A3412',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  qrDevoteeNumber: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: Colors.primaryDark,
+    letterSpacing: 1,
   },
   qrInstructions: {
     fontSize: 13,

@@ -59,14 +59,16 @@ export class LedgerService {
     }
 
     // 2. Identify Recipient
-    const recipientUser = await this.prisma.user.findFirst({
+    const cleanRecipientId = recipientIdentifier.trim();
+    const recipientUser: any = await this.prisma.user.findFirst({
       where: {
         OR: [
-          { id: recipientIdentifier },
-          { username: recipientIdentifier.toLowerCase().trim() },
-          { phone: recipientIdentifier.trim() },
+          { id: cleanRecipientId },
+          { devoteeId: cleanRecipientId },
+          { username: cleanRecipientId.toLowerCase() },
+          { phone: cleanRecipientId },
         ],
-      },
+      } as any,
       include: {
         profile: true,
         wallet: true,
@@ -74,10 +76,10 @@ export class LedgerService {
     });
 
     if (!recipientUser) {
-      throw new NotFoundException(`Recipient '${recipientIdentifier}' not found`);
+      throw new NotFoundException(`Recipient with ID or username '${recipientIdentifier}' not found`);
     }
 
-    if (recipientUser.id === senderUserId) {
+    if (recipientUser.id === senderUserId || recipientUser.devoteeId === senderUserId) {
       throw new BadRequestException('Cannot transfer Mala to your own account');
     }
 

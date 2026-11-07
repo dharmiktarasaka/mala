@@ -46,6 +46,9 @@ export const ProfileSchema = SchemaFactory.createForClass(Profile);
 
 @Schema({ timestamps: true })
 export class User extends Document {
+  @Prop({ unique: true, sparse: true, index: true, trim: true })
+  devoteeId?: string;
+
   @Prop({ unique: true, sparse: true, lowercase: true, trim: true })
   email?: string;
 

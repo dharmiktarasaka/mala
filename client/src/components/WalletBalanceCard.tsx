@@ -10,6 +10,7 @@ interface WalletCardProps {
   totalReceived?: number;
   totalSent?: number;
   username?: string;
+  devoteeId?: string;
   onReceivePress?: () => void;
 }
 
@@ -18,6 +19,7 @@ export const WalletBalanceCard: React.FC<WalletCardProps> = ({
   totalReceived = 0,
   totalSent = 0,
   username,
+  devoteeId,
   onReceivePress,
 }) => {
   const { t } = useThemeStore();
@@ -41,7 +43,14 @@ export const WalletBalanceCard: React.FC<WalletCardProps> = ({
           <Text style={styles.balanceNumber}>{balance.toLocaleString()}</Text>
           <Text style={styles.malaUnit}>MALA</Text>
         </View>
-        {username && <Text style={styles.devoteeTag}>Devotee: @{username}</Text>}
+        <View style={styles.devoteeTagRow}>
+          {username && <Text style={styles.devoteeTag}>Devotee: @{username}</Text>}
+          {devoteeId && (
+            <View style={styles.idBadge}>
+              <Text style={styles.idBadgeText}>ID: #{devoteeId}</Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Received & Sent Sub-stats */}
@@ -149,9 +158,28 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     marginBottom: 6,
   },
+  devoteeTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 2,
+  },
   devoteeTag: {
     fontSize: 12,
     color: '#D1D5DB',
+  },
+  idBadge: {
+    backgroundColor: '#374151',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.accentGold,
+  },
+  idBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.accentGold,
   },
   subStatsRow: {
     flexDirection: 'row',

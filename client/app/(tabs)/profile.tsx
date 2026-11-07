@@ -119,6 +119,12 @@ export default function ProfileScreen() {
           <Text style={[styles.username, { color: Colors.primary }]}>
             @{user?.username}
           </Text>
+          <View style={styles.devoteeIdBadge}>
+            <Ionicons name="card-outline" size={13} color={Colors.accentGoldDark} />
+            <Text style={styles.devoteeIdBadgeText}>
+              Devotee ID: #{user?.devoteeId || profileData?.devoteeId || user?.id}
+            </Text>
+          </View>
           <Text style={[styles.bio, { color: theme.textSecondary }]}>
             {profileData?.profile?.bio || 'Dedicated practitioner of Mindful Japa Meditation.'}
           </Text>
@@ -367,6 +373,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     marginTop: 2,
+  },
+  devoteeIdBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFF8F0',
+    borderColor: '#FED7AA',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginTop: 4,
+  },
+  devoteeIdBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#9A3412',
   },
   bio: {
     fontSize: 13,

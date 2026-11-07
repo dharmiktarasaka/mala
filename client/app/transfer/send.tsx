@@ -40,7 +40,7 @@ export default function SendMalaScreen() {
   const handleVerifyRecipient = async () => {
     const parsedAmount = parseInt(amount, 10);
     if (!recipient.trim()) {
-      Alert.alert('Required', 'Please enter recipient username or User ID');
+      Alert.alert('Required', 'Please enter recipient Devotee Number or username');
       return;
     }
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
@@ -118,13 +118,13 @@ export default function SendMalaScreen() {
         <View style={styles.form}>
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: theme.textPrimary }]}>
-              Recipient Devotee (Username or ID) *
+              Recipient Devotee (Devotee Number or Username) *
             </Text>
             <View style={[styles.inputWrapper, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <Ionicons name="person-outline" size={18} color="#9CA3AF" style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { color: theme.textPrimary }]}
-                placeholder="Enter devotee username or ID"
+                placeholder="Enter 6-digit Devotee Number (e.g. 108429) or username"
                 placeholderTextColor={theme.textMuted}
                 value={recipient}
                 onChangeText={setRecipient}
@@ -231,6 +231,7 @@ export default function SendMalaScreen() {
                     </Text>
                     <Text style={[styles.recipientUsername, { color: Colors.primary }]}>
                       @{previewData.recipient.username}
+                      {previewData.recipient.devoteeId && ` • ID: #${previewData.recipient.devoteeId}`}
                     </Text>
                   </View>
                 </View>

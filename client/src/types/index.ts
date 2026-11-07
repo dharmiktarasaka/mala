@@ -1,5 +1,6 @@
 export interface User {
   id: string;
+  devoteeId?: string;
   username: string;
   email?: string;
   phone?: string;
@@ -30,6 +31,7 @@ export interface WalletDashboard {
   status: string;
   username: string;
   displayName: string;
+  devoteeId?: string;
   qrPayload: string;
   recentTransactions: TransactionSummary[];
 }
