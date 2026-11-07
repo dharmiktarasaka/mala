@@ -14,10 +14,12 @@ import { AchievementsModule } from './modules/achievements/achievements.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { HealthModule } from './modules/health/health.module';
+import { MongoModule } from './database/mongo.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    MongoModule,
     HealthModule,
     PrismaModule,
     AuthModule,

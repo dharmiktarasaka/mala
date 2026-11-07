@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../src/theme/colors';
@@ -344,6 +345,14 @@ const styles = StyleSheet.create({
     height: 110,
     textAlignVertical: 'top',
     fontSize: 14,
+    ...(Platform.OS === 'web'
+      ? ({
+          outlineStyle: 'none',
+          outlineWidth: 0,
+          outline: 'none',
+          boxShadow: 'none',
+        } as any)
+      : {}),
   },
   categorySelectLabel: {
     fontSize: 12,

@@ -1,6 +1,8 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -29,6 +31,51 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private memorySubscriptions = new Map<string, any>();
   private memoryAuditLogs: any[] = [];
   private memoryBlockedUsers: any[] = [];
+  private dbFilePath = path.join(process.cwd(), 'data', 'standalone_db.json');
+
+  public saveToDisk() {
+    try {
+      const dataDir = path.dirname(this.dbFilePath);
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      const snapshot = {
+        users: Array.from(this.memoryUsers.entries()),
+        profiles: Array.from(this.memoryProfiles.entries()),
+        wallets: Array.from(this.memoryWallets.entries()),
+        ledgerAccounts: Array.from(this.memoryLedgerAccounts.entries()),
+        transactions: Array.from(this.memoryTransactions.entries()),
+        stats: Array.from(this.memoryStats.entries()),
+        posts: Array.from(this.memoryPosts.entries()),
+        subscriptions: Array.from(this.memorySubscriptions.entries()),
+      };
+      fs.writeFileSync(this.dbFilePath, JSON.stringify(snapshot, null, 2), 'utf-8');
+    } catch (e: any) {
+      this.logger.warn(`Failed to persist standalone DB to disk: ${e.message}`);
+    }
+  }
+
+  private loadFromDisk(): boolean {
+    try {
+      if (fs.existsSync(this.dbFilePath)) {
+        const raw = fs.readFileSync(this.dbFilePath, 'utf-8');
+        const snapshot = JSON.parse(raw);
+        if (snapshot.users) this.memoryUsers = new Map(snapshot.users);
+        if (snapshot.profiles) this.memoryProfiles = new Map(snapshot.profiles);
+        if (snapshot.wallets) this.memoryWallets = new Map(snapshot.wallets);
+        if (snapshot.ledgerAccounts) this.memoryLedgerAccounts = new Map(snapshot.ledgerAccounts);
+        if (snapshot.transactions) this.memoryTransactions = new Map(snapshot.transactions);
+        if (snapshot.stats) this.memoryStats = new Map(snapshot.stats);
+        if (snapshot.posts) this.memoryPosts = new Map(snapshot.posts);
+        if (snapshot.subscriptions) this.memorySubscriptions = new Map(snapshot.subscriptions);
+        this.logger.log(`📦 Loaded ${this.memoryUsers.size} devotee accounts from persistent local storage.`);
+        return true;
+      }
+    } catch (e: any) {
+      this.logger.warn(`Could not load standalone DB: ${e.message}`);
+    }
+    return false;
+  }
 
   constructor() {
     super({
@@ -55,10 +102,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   private async seedInMemoryDatabase() {
-    const passwordHash = await bcrypt.hash('Password@123', 10);
-    const adminPasswordHash = await bcrypt.hash('AdminPass@108', 10);
+    // Attempt to load existing users and data from disk
+    this.loadFromDisk();
 
-    // 1. Achievements
+    // Seed standard achievement definitions only
     const achs = [
       { id: 'ach-1', code: 'FIRST_MALA', name: 'First Step', description: 'Complete your first digital Mala count', iconName: 'flower-outline', targetValue: 1, category: 'PRACTICE' },
       { id: 'ach-2', code: 'MALA_108', name: 'Sacred 108', description: 'Count a complete traditional 108 bead Mala', iconName: 'sunny-outline', targetValue: 108, category: 'PRACTICE' },
@@ -67,187 +114,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     ];
     for (const a of achs) this.memoryAchievements.set(a.id, a);
 
-    // 2. User A (Arjun - 100 Mala)
-    const userA = {
-      id: 'user-a-id',
-      username: 'user_a',
-      email: 'user_a@mala.app',
-      passwordHash,
-      role: 'USER',
-      status: 'ACTIVE',
-      createdAt: new Date(),
-    };
-    this.memoryUsers.set(userA.id, userA);
-    this.memoryProfiles.set(userA.id, {
-      id: 'p-a',
-      userId: userA.id,
-      displayName: 'Arjun Devotee',
-      bio: 'Chanting Om Namah Shivaya daily. Seeking inner peace.',
-      isPrivate: false,
-      showMalaCount: true,
-      showWalletBalance: false,
-    });
-    this.memoryWallets.set('w-a', {
-      id: 'w-a',
-      userId: userA.id,
-      balance: 100,
-      totalEarned: 100,
-      totalReceived: 0,
-      totalSent: 0,
-      status: 'ACTIVE',
-    });
-    this.memoryLedgerAccounts.set('acc-a', {
-      id: 'acc-a',
-      walletId: 'w-a',
-      accountType: 'USER_AVAILABLE',
-      currency: 'MALA',
-      balance: 100,
-    });
-    this.memoryStats.set(userA.id, {
-      id: 's-a',
-      userId: userA.id,
-      currentDailyCount: 54,
-      lifetimeCount: 1080,
-      currentStreakDays: 12,
-      longestStreakDays: 21,
-      totalSessions: 10,
-    });
-
-    // 3. User B (Bhakti - 50 Mala)
-    const userB = {
-      id: 'user-b-id',
-      username: 'user_b',
-      email: 'user_b@mala.app',
-      passwordHash,
-      role: 'USER',
-      status: 'ACTIVE',
-      createdAt: new Date(),
-    };
-    this.memoryUsers.set(userB.id, userB);
-    this.memoryProfiles.set(userB.id, {
-      id: 'p-b',
-      userId: userB.id,
-      displayName: 'Bhakti Seeker',
-      bio: 'Hare Krishna! Practicing mindful japa meditation.',
-      isPrivate: false,
-      showMalaCount: true,
-      showWalletBalance: false,
-    });
-    this.memoryWallets.set('w-b', {
-      id: 'w-b',
-      userId: userB.id,
-      balance: 50,
-      totalEarned: 50,
-      totalReceived: 0,
-      totalSent: 0,
-      status: 'ACTIVE',
-    });
-    this.memoryLedgerAccounts.set('acc-b', {
-      id: 'acc-b',
-      walletId: 'w-b',
-      accountType: 'USER_AVAILABLE',
-      currency: 'MALA',
-      balance: 50,
-    });
-    this.memoryStats.set(userB.id, {
-      id: 's-b',
-      userId: userB.id,
-      currentDailyCount: 108,
-      lifetimeCount: 2160,
-      currentStreakDays: 18,
-      longestStreakDays: 30,
-      totalSessions: 20,
-    });
-
-    // 4. User C (Chetan - 0 Mala)
-    const userC = {
-      id: 'user-c-id',
-      username: 'user_c',
-      email: 'user_c@mala.app',
-      passwordHash,
-      role: 'USER',
-      status: 'ACTIVE',
-      createdAt: new Date(),
-    };
-    this.memoryUsers.set(userC.id, userC);
-    this.memoryProfiles.set(userC.id, {
-      id: 'p-c',
-      userId: userC.id,
-      displayName: 'Chetan Traveler',
-      bio: 'Beginning my spiritual journey with digital mala.',
-      isPrivate: false,
-      showMalaCount: true,
-      showWalletBalance: false,
-    });
-    this.memoryWallets.set('w-c', {
-      id: 'w-c',
-      userId: userC.id,
-      balance: 0,
-      totalEarned: 0,
-      totalReceived: 0,
-      totalSent: 0,
-      status: 'ACTIVE',
-    });
-    this.memoryLedgerAccounts.set('acc-c', {
-      id: 'acc-c',
-      walletId: 'w-c',
-      accountType: 'USER_AVAILABLE',
-      currency: 'MALA',
-      balance: 0,
-    });
-    this.memoryStats.set(userC.id, {
-      id: 's-c',
-      userId: userC.id,
-      currentDailyCount: 0,
-      lifetimeCount: 27,
-      currentStreakDays: 2,
-      longestStreakDays: 5,
-      totalSessions: 1,
-    });
-
-    // 5. Admin Devotee
-    const admin = {
-      id: 'admin-id',
-      username: 'admin_devotee',
-      email: 'admin@mala.app',
-      passwordHash: adminPasswordHash,
-      role: 'ADMIN',
-      status: 'ACTIVE',
-      createdAt: new Date(),
-    };
-    this.memoryUsers.set(admin.id, admin);
-    this.memoryProfiles.set(admin.id, {
-      id: 'p-admin',
-      userId: admin.id,
-      displayName: 'Mala Platform Admin',
-      bio: 'Platform Guardian and Community Moderator',
-    });
-    this.memoryWallets.set('w-admin', {
-      id: 'w-admin',
-      userId: admin.id,
-      balance: 100000,
-      status: 'ACTIVE',
-    });
-    this.memoryStats.set(admin.id, {
-      id: 's-admin',
-      userId: admin.id,
-      currentDailyCount: 108,
-      lifetimeCount: 10800,
-      currentStreakDays: 100,
-      longestStreakDays: 100,
-    });
-
-    // Initial Community Posts
-    this.memoryPosts.set('post-1', {
-      id: 'post-1',
-      userId: userA.id,
-      content: 'Morning 108 Gayatri Mantra completed with deep focus and calm. Wishing all devotees a blessed day! 🙏🕉️',
-      category: 'PRACTICE',
-      visibility: 'PUBLIC',
-      likesCount: 5,
-      commentsCount: 1,
-      createdAt: new Date(),
-    });
+    // Completely empty - all fake users (user_a, user_b, user_c, admin) and fake posts removed.
   }
 
   private attachInMemoryProxy() {
@@ -280,19 +147,27 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       findUnique: async ({ where, include }: any) => {
         let u = null;
         if (where.id) u = self.memoryUsers.get(where.id);
-        if (where.username) u = Array.from(self.memoryUsers.values()).find((x) => x.username === where.username);
-        if (where.phone) u = Array.from(self.memoryUsers.values()).find((x) => x.phone === where.phone);
+        if (!u && where.email) {
+          const target = where.email.toLowerCase().trim();
+          u = Array.from(self.memoryUsers.values()).find((x) => x.email?.toLowerCase() === target);
+        }
+        if (!u && where.username) {
+          const target = where.username.toLowerCase().trim();
+          u = Array.from(self.memoryUsers.values()).find((x) => x.username?.toLowerCase() === target);
+        }
+        if (!u && where.phone) u = Array.from(self.memoryUsers.values()).find((x) => x.phone === where.phone);
         return enrichUser(u, include);
       },
       findFirst: async ({ where, include }: any) => {
         const users = Array.from(self.memoryUsers.values());
         for (const u of users) {
-          if (where.username && u.username === where.username) return enrichUser(u, include);
+          if (where.email && u.email?.toLowerCase() === where.email.toLowerCase().trim()) return enrichUser(u, include);
+          if (where.username && u.username?.toLowerCase() === where.username.toLowerCase().trim()) return enrichUser(u, include);
           if (where.id && u.id === where.id) return enrichUser(u, include);
           if (where.OR) {
             for (const cond of where.OR) {
-              if (cond.username && u.username === cond.username) return enrichUser(u, include);
-              if (cond.email && u.email === cond.email) return enrichUser(u, include);
+              if (cond.email && u.email?.toLowerCase() === cond.email.toLowerCase().trim()) return enrichUser(u, include);
+              if (cond.username && u.username?.toLowerCase() === cond.username.toLowerCase().trim()) return enrichUser(u, include);
               if (cond.phone && u.phone === cond.phone) return enrichUser(u, include);
               if (cond.id && u.id === cond.id) return enrichUser(u, include);
             }
@@ -314,11 +189,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const u = { id: `u-${Date.now()}-${Math.floor(Math.random() * 1000)}`, createdAt: new Date(), ...data };
         self.memoryUsers.set(u.id, u);
+        self.saveToDisk();
         return u;
       },
       update: async ({ where, data }: any) => {
         const u = self.memoryUsers.get(where.id);
-        if (u) Object.assign(u, data);
+        if (u) {
+          Object.assign(u, data);
+          self.saveToDisk();
+        }
         return u;
       },
     };
@@ -328,6 +207,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const p = { id: `p-${Date.now()}`, ...data };
         self.memoryProfiles.set(data.userId, p);
+        self.saveToDisk();
         return p;
       },
       upsert: async ({ where, create, update }: any) => {
@@ -338,11 +218,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           p = { id: `p-${Date.now()}`, ...create };
           self.memoryProfiles.set(where.userId, p);
         }
+        self.saveToDisk();
         return p;
       },
       update: async ({ where, data }: any) => {
         const p = self.memoryProfiles.get(where.userId);
-        if (p) Object.assign(p, data);
+        if (p) {
+          Object.assign(p, data);
+          self.saveToDisk();
+        }
         return p;
       },
     };
@@ -366,6 +250,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const w = { id: `w-${Date.now()}`, totalReceived: 0, totalSent: 0, totalEarned: 0, status: 'ACTIVE', ...data };
         self.memoryWallets.set(w.id, w);
+        self.saveToDisk();
         return w;
       },
       update: async ({ where, data }: any) => {
@@ -374,6 +259,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         if (typeof data.balance === 'number') w.balance = data.balance;
         if (data.totalSent?.increment) w.totalSent += data.totalSent.increment;
         if (data.totalReceived?.increment) w.totalReceived += data.totalReceived.increment;
+        self.saveToDisk();
         return w;
       },
     };

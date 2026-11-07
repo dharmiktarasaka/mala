@@ -8,6 +8,7 @@ import {
   TextInput,
   Alert,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -395,6 +396,17 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     marginLeft: 8,
+    paddingVertical: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    ...(Platform.OS === 'web'
+      ? ({
+          outlineStyle: 'none',
+          outlineWidth: 0,
+          outline: 'none',
+          boxShadow: 'none',
+        } as any)
+      : {}),
   },
   searchSubmitBtn: {
     backgroundColor: Colors.primary,

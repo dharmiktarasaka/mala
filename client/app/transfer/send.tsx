@@ -9,6 +9,7 @@ import {
   Alert,
   ScrollView,
   Modal,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -123,7 +124,7 @@ export default function SendMalaScreen() {
               <Ionicons name="person-outline" size={18} color="#9CA3AF" style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { color: theme.textPrimary }]}
-                placeholder="e.g. user_b"
+                placeholder="Enter devotee username or ID"
                 placeholderTextColor={theme.textMuted}
                 value={recipient}
                 onChangeText={setRecipient}
@@ -180,7 +181,7 @@ export default function SendMalaScreen() {
               <Ionicons name="sparkles-outline" size={18} color="#9CA3AF" style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { color: theme.textPrimary }]}
-                placeholder="e.g. For Tuesday Hanuman Chalisa"
+                placeholder="Add a spiritual note or blessing (optional)"
                 placeholderTextColor={theme.textMuted}
                 value={note}
                 onChangeText={setNote}
@@ -347,6 +348,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingBottom: 40,
+    maxWidth: 580,
+    width: '100%',
+    alignSelf: 'center',
   },
   balanceCard: {
     padding: 16,
@@ -393,6 +397,17 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 14,
+    paddingVertical: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    ...(Platform.OS === 'web'
+      ? ({
+          outlineStyle: 'none',
+          outlineWidth: 0,
+          outline: 'none',
+          boxShadow: 'none',
+        } as any)
+      : {}),
   },
   chipsRow: {
     flexDirection: 'row',

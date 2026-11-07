@@ -1,0 +1,36 @@
+services:
+  # ==========================================
+  # MALA Platform - Production Backend Service
+  # ==========================================
+  - type: web
+    name: mala-backend
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: server
+    buildCommand: pnpm install --prod=false && pnpm run build
+    startCommand: pnpm run start:prod
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: CORS_ORIGIN
+        value: '*'
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      # Connect your external PostgreSQL / Supabase / Neon / Render DB
+      - key: DATABASE_URL
+        sync: false
+      # Connect your MongoDB Atlas URI
+      - key: MONGODB_URI
+        sync: false
+

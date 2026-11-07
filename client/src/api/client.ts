@@ -4,11 +4,32 @@ import axios from 'axios';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../store/authStore';
 
-export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+const resolveApiBase = () => {
+  if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL) {
+    const url = process.env.EXPO_PUBLIC_API_URL.trim().replace(/\/+$/, '');
+    return url.endsWith('/api/v1') ? url : `${url}/api/v1`;
+  }
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    return `http://${window.location.hostname}:3000/api/v1`;
+  }
+  return 'http://localhost:3000/api/v1';
+};
 
-export const SOCKET_URL =
-  process.env.EXPO_PUBLIC_SOCKET_URL || 'http://localhost:3000';
+const resolveSocketUrl = () => {
+  if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_SOCKET_URL) {
+    return process.env.EXPO_PUBLIC_SOCKET_URL.trim().replace(/\/+$/, '');
+  }
+  if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL.trim().replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    return `http://${window.location.hostname}:3000`;
+  }
+  return 'http://localhost:3000';
+};
+
+export const API_BASE_URL = resolveApiBase();
+export const SOCKET_URL = resolveSocketUrl();
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

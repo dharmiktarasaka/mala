@@ -1,0 +1,272 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGODB_URI")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+  SUPERADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum AccountStatus {
+  ACTIVE
+  FROZEN
+  LOCKED
+}
+
+enum LedgerAccountType {
+  USER_AVAILABLE
+  USER_LOCKED
+  SYSTEM_VAULT
+  REWARD_POOL
+  FEE_POOL
+}
+
+enum TransactionType {
+  TRANSFER
+  REWARD
+  DEPOSIT
+  ADMIN_ADJUSTMENT
+}
+
+enum TransactionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+enum EntryType {
+  DEBIT
+  CREDIT
+}
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum PostCategory {
+  PRACTICE
+  QUOTES
+  MEDITATION
+  BHAKTI
+  ACHIEVEMENTS
+  COMMUNITY
+  GENERAL
+}
+
+enum PostVisibility {
+  PUBLIC
+  FRIENDS_ONLY
+  PRIVATE
+}
+
+enum NotificationType {
+  MALA_RECEIVED
+  MALA_SENT
+  FRIEND_REQUEST
+  FRIEND_ACCEPTED
+  NEW_MESSAGE
+  POST_LIKE
+  POST_COMMENT
+  ACHIEVEMENT_UNLOCKED
+  PRACTICE_REMINDER
+  SYSTEM_ALERT
+}
+
+enum SubscriptionPlan {
+  FREE
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+model User {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  email           String?      @unique
+  phone           String?      @unique
+  username        String       @unique
+  passwordHash    String?
+  role            UserRole     @default(USER)
+  status          UserStatus   @default(ACTIVE)
+  isEmailVerified Boolean      @default(false)
+  isPhoneVerified Boolean      @default(false)
+  refreshToken    String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  deletedAt       DateTime?
+
+  profile         UserProfile?
+  wallet          Wallet?
+  ledgerAccount   LedgerAccount?
+  counterSessions CounterSession[]
+  posts           Post[]
+  comments        Comment[]
+  likes           Like[]
+  notifications   Notification[]
+}
+
+model UserProfile {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String    @unique @db.ObjectId
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName       String
+  spiritualName  String?
+  bio            String?
+  avatarUrl      String?
+  bannerUrl      String?
+  tradition      String?
+  favoriteMantra String?
+  city           String?
+  country        String?
+  language       String    @default("en")
+  timezone       String    @default("Asia/Kolkata")
+  isPublic       Boolean   @default(true)
+  showMobile     Boolean   @default(false)
+  showEmail      Boolean   @default(false)
+  showStats      Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Wallet {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String        @unique @db.ObjectId
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance       Int           @default(0)
+  lockedBalance Int           @default(0)
+  status        AccountStatus @default(ACTIVE)
+  currency      String        @default("MALA")
+  totalCounted  Int           @default(0)
+  totalReceived Int           @default(0)
+  totalSent     Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model LedgerAccount {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String?           @unique @db.ObjectId
+  user          User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountNumber String            @unique
+  accountType   LedgerAccountType @default(USER_AVAILABLE)
+  balance       Int               @default(0)
+  status        AccountStatus     @default(ACTIVE)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  entries       LedgerEntry[]
+}
+
+model Transaction {
+  id             String            @id @default(auto()) @map("_id") @db.ObjectId
+  reference      String            @unique
+  idempotencyKey String?           @unique
+  type           TransactionType
+  status         TransactionStatus @default(PENDING)
+  totalAmount    Int
+  note           String?
+  metadata       String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  entries        LedgerEntry[]
+}
+
+model LedgerEntry {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  transactionId String        @db.ObjectId
+  transaction   Transaction   @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  accountId     String        @db.ObjectId
+  account       LedgerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  entryType     EntryType
+  amount        Int
+  balanceAfter  Int
+  createdAt     DateTime      @default(now())
+}
+
+model CounterSession {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String    @db.ObjectId
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetBeads     Int       @default(108)
+  beadsCounted    Int       @default(0)
+  malasCompleted  Int       @default(0)
+  mantra          String    @default("Om Namah Shivaya")
+  durationSeconds Int       @default(0)
+  isCompleted     Boolean   @default(false)
+  hapticEnabled   Boolean   @default(true)
+  soundEnabled    Boolean   @default(true)
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+}
+
+model Post {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  authorId      String         @db.ObjectId
+  user          User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content       String
+  mantraText    String?
+  category      PostCategory   @default(PRACTICE)
+  visibility    PostVisibility @default(PUBLIC)
+  likesCount    Int            @default(0)
+  commentsCount Int            @default(0)
+  sharesCount   Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  comments      Comment[]
+  likes         Like[]
+}
+
+model Comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String   @db.ObjectId
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String   @db.ObjectId
+  user      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Like {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String   @db.ObjectId
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+}
+
+model Notification {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String           @db.ObjectId
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String
+  data      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+}
+

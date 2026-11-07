@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Switch,
   Alert,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -73,15 +74,28 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
+    const performLogout = () => {
+      logout();
+      router.replace('/(auth)/login');
+    };
+
+    if (Platform.OS === 'web') {
+      const confirmed =
+        typeof window !== 'undefined'
+          ? window.confirm('Are you sure you wish to exit your sanctuary?')
+          : true;
+      if (confirmed) {
+        performLogout();
+      }
+      return;
+    }
+
     Alert.alert('Confirm Logout', 'Are you sure you wish to exit your sanctuary?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Logout',
         style: 'destructive',
-        onPress: () => {
-          logout();
-          router.replace('/(auth)/login');
-        },
+        onPress: performLogout,
       },
     ]);
   };
@@ -100,7 +114,7 @@ export default function ProfileScreen() {
           </View>
 
           <Text style={[styles.displayName, { color: theme.textPrimary }]}>
-            {user?.displayName || 'Arjun Devotee'}
+            {user?.displayName || user?.email?.split('@')[0] || 'Devotee'}
           </Text>
           <Text style={[styles.username, { color: Colors.primary }]}>
             @{user?.username}
@@ -318,6 +332,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingBottom: 50,
+    width: '100%',
+    maxWidth: 640,
+    alignSelf: 'center',
   },
   profileCard: {
     alignItems: 'center',

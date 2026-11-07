@@ -17,25 +17,33 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
+    const normalizedEmail = dto.email.toLowerCase().trim();
+    let finalUsername = dto.username ? dto.username.toLowerCase().trim() : '';
+
+    if (!finalUsername) {
+      const emailPrefix = normalizedEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_');
+      finalUsername = `${emailPrefix}_${Math.floor(100 + Math.random() * 900)}`;
+    }
+
     const existing = await this.prisma.user.findFirst({
       where: {
         OR: [
-          { username: dto.username },
-          dto.email ? { email: dto.email } : undefined,
+          { email: normalizedEmail },
+          { username: finalUsername },
           dto.phone ? { phone: dto.phone } : undefined,
         ].filter(Boolean) as any,
       },
     });
 
     if (existing) {
-      if (existing.username === dto.username) {
-        throw new ConflictException('Username already taken');
+      if (existing.email === normalizedEmail) {
+        throw new ConflictException('This email address is already registered. Please log in.');
       }
-      if (dto.email && existing.email === dto.email) {
-        throw new ConflictException('Email already registered');
+      if (existing.username === finalUsername) {
+        throw new ConflictException('Username is already taken. Please choose another username.');
       }
       if (dto.phone && existing.phone === dto.phone) {
-        throw new ConflictException('Phone number already registered');
+        throw new ConflictException('Phone number is already registered.');
       }
     }
 
@@ -46,8 +54,8 @@ export class AuthService {
     const newUser = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
-          username: dto.username.toLowerCase().trim(),
-          email: dto.email ? dto.email.toLowerCase().trim() : null,
+          username: finalUsername,
+          email: normalizedEmail,
           phone: dto.phone ? dto.phone.trim() : null,
           passwordHash,
           role: 'USER',
@@ -134,7 +142,7 @@ export class AuthService {
     });
 
     if (!user || !user.passwordHash) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('No devotee account found with this email or username. Please register first.');
     }
 
     if (user.status !== 'ACTIVE') {
@@ -143,7 +151,7 @@ export class AuthService {
 
     const isMatch = await bcrypt.compare(dto.password, user.passwordHash);
     if (!isMatch) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Incorrect password. Please verify your password and try again.');
     }
 
     const tokens = await this.generateTokens(user.id, user.username, user.role);

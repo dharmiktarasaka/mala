@@ -1,16 +1,34 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import * as dns from 'dns';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+
+// Use public DNS resolvers on Windows to resolve MongoDB Atlas SRV records
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+} catch (e) {
+  // Ignore in restricted environments
+}
+
+// Global process error handlers to prevent unexpected background exits
+process.on('unhandledRejection', (reason: any) => {
+  const msg = reason?.message || String(reason);
+  console.warn(`[Process] Unhandled Rejection intercepted: ${msg}`);
+});
+
+process.on('uncaughtException', (err: any) => {
+  console.warn(`[Process] Uncaught Exception intercepted: ${err.message}`);
+});
 
 async function bootstrap() {
   const logger = new Logger('MalaPlatform');
   const app = await NestFactory.create(AppModule);
 
   // Enable graceful shutdown hooks for SIGTERM / SIGINT in containerized environments
-  app.enableShutdownHooks();
+  // app.enableShutdownHooks();
 
   // Trust reverse proxy (Nginx, Cloudflare, AWS ALB) for client IP detection
   const expressInstance = app.getHttpAdapter().getInstance();
@@ -67,7 +85,7 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT || 3000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   logger.log(`=======================================================`);
   logger.log(`🕉️  MALA Backend is running on: http://localhost:${port}/api/v1`);
   logger.log(`📖  OpenAPI / Swagger docs: http://localhost:${port}/api/docs`);

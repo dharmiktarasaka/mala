@@ -1,6 +1,7 @@
 import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PrismaService } from '../../prisma/prisma.service';
+import mongoose from 'mongoose';
 
 @ApiTags('Health')
 @Controller('health')
@@ -12,15 +13,28 @@ export class HealthController {
   @ApiOperation({ summary: 'Liveness & Readiness probe for load balancers and container orchestrators' })
   @ApiResponse({ status: 200, description: 'Application is healthy and ready to serve traffic' })
   async check() {
-    let dbStatus = 'connected';
+    let relationalDbStatus = 'connected';
     try {
       if (this.prisma.isOfflineMode) {
-        dbStatus = 'in-memory-mode';
+        relationalDbStatus = 'in-memory-mode';
       } else {
         await this.prisma.$queryRaw`SELECT 1`;
       }
     } catch (e: any) {
-      dbStatus = `error: ${e.message}`;
+      relationalDbStatus = `error: ${e.message}`;
+    }
+
+    // Check MongoDB connection status
+    let mongoStatus = 'disconnected';
+    const state = mongoose.connection.readyState;
+    if (state === 1) {
+      mongoStatus = 'connected';
+    } else if (state === 2) {
+      mongoStatus = 'connecting';
+    } else if (process.env.MONGODB_URI) {
+      mongoStatus = 'configured_offline';
+    } else {
+      mongoStatus = 'ready_on_demand';
     }
 
     const memUsage = process.memoryUsage();
@@ -30,7 +44,14 @@ export class HealthController {
       service: 'mala-backend',
       timestamp: new Date().toISOString(),
       uptimeSeconds: Math.floor(process.uptime()),
-      database: dbStatus,
+      databases: {
+        primary: relationalDbStatus,
+        mongodb: {
+          status: mongoStatus,
+          databaseName: mongoose.connection.name || 'mala_db',
+          host: mongoose.connection.host || 'localhost',
+        },
+      },
       memory: {
         rssMb: Math.round(memUsage.rss / 1024 / 1024),
         heapUsedMb: Math.round(memUsage.heapUsed / 1024 / 1024),
@@ -41,4 +62,3 @@ export class HealthController {
     };
   }
 }
-

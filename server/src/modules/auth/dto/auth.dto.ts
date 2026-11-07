@@ -2,20 +2,20 @@ import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-vali
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RegisterDto {
-  @ApiProperty({ example: 'raman_bhakt' })
-  @IsString()
-  @IsNotEmpty()
-  username: string;
+  @ApiProperty({ example: 'raman@example.com', description: 'User email address' })
+  @IsEmail({}, { message: 'Please provide a valid email address' })
+  @IsNotEmpty({ message: 'Email address is required' })
+  email: string;
 
   @ApiProperty({ example: 'Raman Sharma' })
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'Display name is required' })
   displayName: string;
 
-  @ApiProperty({ example: 'raman@example.com', required: false })
-  @IsEmail()
+  @ApiProperty({ example: 'raman_bhakt', required: false })
+  @IsString()
   @IsOptional()
-  email?: string;
+  username?: string;
 
   @ApiProperty({ example: '+919876543210', required: false })
   @IsString()
@@ -24,15 +24,15 @@ export class RegisterDto {
 
   @ApiProperty({ example: 'MalaPass@123', minLength: 6 })
   @IsString()
-  @MinLength(6)
+  @MinLength(6, { message: 'Password must be at least 6 characters' })
   password: string;
 }
 
 export class LoginDto {
-  @ApiProperty({ example: 'raman_bhakt' })
+  @ApiProperty({ example: 'raman@example.com', description: 'User email ID or username' })
   @IsString()
-  @IsNotEmpty()
-  identifier: string; // username, email, or phone
+  @IsNotEmpty({ message: 'Please enter your email ID or username' })
+  identifier: string; // email, username, or phone
 
   @ApiProperty({ example: 'MalaPass@123' })
   @IsString()

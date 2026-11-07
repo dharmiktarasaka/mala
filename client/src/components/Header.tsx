@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors } from '../theme/colors';
 import { useThemeStore } from '../store/themeStore';
+import { OmSymbol } from './OmSymbol';
 
 interface HeaderProps {
   title?: string;
@@ -32,9 +33,7 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack, rightAction }) 
           </TouchableOpacity>
         ) : (
           <View style={styles.brandRow}>
-            <View style={styles.omBadge}>
-              <Text style={styles.omText}>🕉️</Text>
-            </View>
+            <OmSymbol size={18} badgeSize={32} />
             <Text style={[styles.brandTitle, { color: Colors.primary }]}>
               {title || t('appName')}
             </Text>
@@ -130,4 +129,5 @@ const styles = StyleSheet.create({
     padding: 6,
   },
 });
+
 

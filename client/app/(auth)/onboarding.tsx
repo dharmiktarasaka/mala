@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView } from
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../src/theme/colors';
+import { OmSymbol } from '../../src/components/OmSymbol';
 
 const { width } = Dimensions.get('window');
 
@@ -36,7 +37,7 @@ export default function OnboardingScreen() {
     if (currentSlide < slides.length - 1) {
       setCurrentSlide(currentSlide + 1);
     } else {
-      router.replace('/(auth)/login');
+      router.replace('/(auth)/register');
     }
   };
 
@@ -46,9 +47,7 @@ export default function OnboardingScreen() {
     <View style={styles.container}>
       {/* Top Brand Logo */}
       <View style={styles.topHeader}>
-        <View style={styles.logoBadge}>
-          <Text style={styles.omSymbol}>🕉️</Text>
-        </View>
+        <OmSymbol size={32} badgeSize={64} />
         <Text style={styles.brandTitle}>MALA</Text>
         <Text style={styles.brandTagline}>Sacred Digital Devotion</Text>
       </View>
@@ -155,6 +154,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 4,
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
   },
   iconCircle: {
     width: 96,
@@ -194,6 +196,9 @@ const styles = StyleSheet.create({
   bottomSection: {
     gap: 16,
     marginBottom: 20,
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
   },
   primaryBtn: {
     backgroundColor: Colors.primary,

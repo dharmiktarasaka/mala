@@ -244,6 +244,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 14,
     maxHeight: 100,
+    ...(Platform.OS === 'web'
+      ? ({
+          outlineStyle: 'none',
+          outlineWidth: 0,
+          outline: 'none',
+          boxShadow: 'none',
+        } as any)
+      : {}),
   },
   sendBtn: {
     width: 44,

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "node serve-dist.js",
     "serve": "node serve-dist.js",
+    "build": "expo export --platform web",
     "build:web": "expo export --platform web",
     "start": "expo start",
     "expo:web": "expo start --web",

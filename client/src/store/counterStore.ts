@@ -30,7 +30,7 @@ export const useCounterStore = create<CounterState>((set, get) => ({
   targetCount: 108,
   dailyTotal: 0,
   lifetimeTotal: 0,
-  streakDays: 1,
+  streakDays: 0,
   soundEnabled: true,
   vibrationEnabled: true,
   targetCompletedAnimation: false,

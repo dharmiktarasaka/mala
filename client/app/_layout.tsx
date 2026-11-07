@@ -29,6 +29,7 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: theme.background },
           }}
         >
+          <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="transfer/send" options={{ presentation: 'modal' }} />
