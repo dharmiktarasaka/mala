@@ -185,9 +185,24 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       const db = mongoose.connection.db;
       const cleanDoc = { ...doc };
       delete cleanDoc._id;
+
+      // Omit null/undefined values to prevent Mongo unique sparse index collisions (e.g. phone: null)
+      const unsetFields: any = {};
+      for (const k of Object.keys(cleanDoc)) {
+        if (cleanDoc[k] === null || cleanDoc[k] === undefined) {
+          delete cleanDoc[k];
+          unsetFields[k] = '';
+        }
+      }
+
+      const updateOp: any = { $set: cleanDoc };
+      if (Object.keys(unsetFields).length > 0) {
+        updateOp.$unset = unsetFields;
+      }
+
       await db.collection(collectionName).updateOne(
         { id: id } as any,
-        { $set: cleanDoc },
+        updateOp,
         { upsert: true }
       );
       this.logger.log(`💾 [MongoDB Atlas] Successfully persisted [${collectionName}] id: ${id}`);
@@ -217,16 +232,25 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       for (const [id, user] of this.memoryUsers.entries()) {
         const clean = { ...user };
         delete clean._id;
+        for (const k of Object.keys(clean)) {
+          if (clean[k] === null || clean[k] === undefined) delete clean[k];
+        }
         await db.collection('users').updateOne({ id: id } as any, { $set: clean }, { upsert: true });
       }
       for (const [userId, profile] of this.memoryProfiles.entries()) {
         const clean = { ...profile };
         delete clean._id;
+        for (const k of Object.keys(clean)) {
+          if (clean[k] === null || clean[k] === undefined) delete clean[k];
+        }
         await db.collection('user_profiles').updateOne({ userId } as any, { $set: clean }, { upsert: true });
       }
       for (const [id, wallet] of this.memoryWallets.entries()) {
         const clean = { ...wallet };
         delete clean._id;
+        for (const k of Object.keys(clean)) {
+          if (clean[k] === null || clean[k] === undefined) delete clean[k];
+        }
         await db.collection('wallets').updateOne({ id: id } as any, { $set: clean }, { upsert: true });
       }
       for (const [id, acc] of this.memoryLedgerAccounts.entries()) {

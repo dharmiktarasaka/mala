@@ -18,11 +18,12 @@ interface AuthState {
 const STORAGE_KEY = 'mala_auth_session';
 
 const loadSavedAuth = () => {
-  if (typeof window !== 'undefined' && window.localStorage) {
+  if (typeof window !== 'undefined') {
+    // 1. Check tab-isolated sessionStorage first so different tabs/windows can run different devotee accounts
     try {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
+      const tabSaved = window.sessionStorage?.getItem(STORAGE_KEY);
+      if (tabSaved) {
+        const parsed = JSON.parse(tabSaved);
         if (parsed?.token && parsed?.user) {
           return {
             user: parsed.user,
@@ -33,7 +34,27 @@ const loadSavedAuth = () => {
         }
       }
     } catch {}
+
+    // 2. Fall back to persistent localStorage
+    try {
+      const saved = window.localStorage?.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.token && parsed?.user) {
+          try {
+            window.sessionStorage?.setItem(STORAGE_KEY, saved);
+          } catch {}
+          return {
+            user: parsed.user,
+            token: parsed.token,
+            refreshToken: parsed.refreshToken || null,
+            isAuthenticated: true,
+          };
+        }
+      }
+    } catch {}
   }
+
   return {
     user: null,
     token: null,
@@ -53,12 +74,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   isHydrated: true,
 
   setAuth: (user, token, refreshToken) => {
-    if (typeof window !== 'undefined' && window.localStorage) {
+    const payload = JSON.stringify({ user, token, refreshToken });
+    if (typeof window !== 'undefined') {
       try {
-        window.localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({ user, token, refreshToken }),
-        );
+        window.sessionStorage?.setItem(STORAGE_KEY, payload);
+      } catch {}
+      try {
+        window.localStorage?.setItem(STORAGE_KEY, payload);
       } catch {}
     }
     set({
@@ -74,16 +96,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   updateUser: (partial) =>
     set((state) => {
       const updatedUser = state.user ? { ...state.user, ...partial } : null;
-      if (typeof window !== 'undefined' && window.localStorage && updatedUser && state.token) {
+      if (typeof window !== 'undefined' && updatedUser && state.token) {
+        const payload = JSON.stringify({
+          user: updatedUser,
+          token: state.token,
+          refreshToken: state.refreshToken,
+        });
         try {
-          window.localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify({
-              user: updatedUser,
-              token: state.token,
-              refreshToken: state.refreshToken,
-            }),
-          );
+          window.sessionStorage?.setItem(STORAGE_KEY, payload);
+        } catch {}
+        try {
+          window.localStorage?.setItem(STORAGE_KEY, payload);
         } catch {}
       }
       return { user: updatedUser };
@@ -92,25 +115,29 @@ export const useAuthStore = create<AuthState>((set) => ({
   updateWalletBalance: (balance) =>
     set((state) => {
       const updatedUser = state.user ? { ...state.user, walletBalance: balance } : null;
-      if (typeof window !== 'undefined' && window.localStorage && updatedUser && state.token) {
+      if (typeof window !== 'undefined' && updatedUser && state.token) {
+        const payload = JSON.stringify({
+          user: updatedUser,
+          token: state.token,
+          refreshToken: state.refreshToken,
+        });
         try {
-          window.localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify({
-              user: updatedUser,
-              token: state.token,
-              refreshToken: state.refreshToken,
-            }),
-          );
+          window.sessionStorage?.setItem(STORAGE_KEY, payload);
+        } catch {}
+        try {
+          window.localStorage?.setItem(STORAGE_KEY, payload);
         } catch {}
       }
       return { user: updatedUser };
     }),
 
   logout: () => {
-    if (typeof window !== 'undefined' && window.localStorage) {
+    if (typeof window !== 'undefined') {
       try {
-        window.localStorage.removeItem(STORAGE_KEY);
+        window.sessionStorage?.removeItem(STORAGE_KEY);
+      } catch {}
+      try {
+        window.localStorage?.removeItem(STORAGE_KEY);
       } catch {}
     }
     set({

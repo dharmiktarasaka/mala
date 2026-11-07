@@ -55,7 +55,15 @@ export class User extends Document {
   @Prop({ unique: true, sparse: true, lowercase: true, trim: true })
   email?: string;
 
-  @Prop({ unique: true, sparse: true, trim: true })
+  @Prop({
+    unique: true,
+    sparse: true,
+    trim: true,
+    index: {
+      unique: true,
+      partialFilterExpression: { phone: { $type: 'string' } },
+    },
+  })
   phone?: string;
 
   @Prop({ required: true, unique: true, lowercase: true, trim: true, index: true })

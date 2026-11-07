@@ -70,7 +70,7 @@ export class AuthService {
           devoteeId,
           username: finalUsername,
           email: normalizedEmail,
-          phone: dto.phone ? dto.phone.trim() : null,
+          phone: dto.phone ? dto.phone.trim() : undefined,
           passwordHash,
           role: 'USER',
           status: 'ACTIVE',
