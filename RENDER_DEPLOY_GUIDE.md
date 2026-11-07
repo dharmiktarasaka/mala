@@ -16,7 +16,7 @@ Because we created [`render.yaml`](./render.yaml), Render can automatically dete
    - **Service Name**: `mala-backend`
    - **Root Directory**: `server`
    - **Runtime**: `Node`
-   - **Build Command**: `pnpm install --prod=false && pnpm run build`
+   - **Build Command**: `pnpm install --no-frozen-lockfile && pnpm run build`
    - **Start Command**: `pnpm run start:prod`
    - **Health Check Path**: `/api/v1/health`
    - Auto-generated cryptographic `JWT_SECRET` and `JWT_REFRESH_SECRET`
@@ -39,7 +39,7 @@ If you prefer to create a Web Service manually in Render:
 | **Branch** | `main` (or your active branch) |
 | **Root Directory** | `server` |
 | **Runtime** | `Node` |
-| **Build Command** | `pnpm install --prod=false && pnpm run build` |
+| **Build Command** | `pnpm install --no-frozen-lockfile && pnpm run build` |
 | **Start Command** | `pnpm run start:prod` |
 | **Instance Type** | Free |
 
