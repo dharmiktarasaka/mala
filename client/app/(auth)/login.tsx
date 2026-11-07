@@ -71,8 +71,12 @@ export default function LoginScreen() {
       setAuth(user, accessToken, refreshToken);
       router.replace('/(tabs)');
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || 'Login failed';
-      setErrorMsg(Array.isArray(msg) ? msg.join(', ') : msg);
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setErrorMsg('The cloud server is waking up. Please click "Enter Sanctuary" once more! 🙏');
+      } else {
+        const msg = err.response?.data?.message || err.message || 'Login failed';
+        setErrorMsg(Array.isArray(msg) ? msg.join(', ') : msg);
+      }
     } finally {
       setLoading(false);
     }

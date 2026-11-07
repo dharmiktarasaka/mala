@@ -85,8 +85,12 @@ export default function RegisterScreen() {
 
       setRegisteredUser({ user, accessToken, refreshToken });
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || 'Registration failed';
-      setErrorMsg(Array.isArray(msg) ? msg.join(', ') : msg);
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setErrorMsg('The cloud server is waking up. Please click "Register Devotee Account" once more! 🙏');
+      } else {
+        const msg = err.response?.data?.message || err.message || 'Registration failed';
+        setErrorMsg(Array.isArray(msg) ? msg.join(', ') : msg);
+      }
     } finally {
       setLoading(false);
     }
