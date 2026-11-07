@@ -176,31 +176,87 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     }
   }
 
-  public async saveToMongo(collectionName: string, id: string, doc: any) {
+  public async saveToMongo(collectionName: string, id: string, doc: any): Promise<boolean> {
     try {
-      if (mongoose.connection.readyState !== 1) return;
+      if (mongoose.connection.readyState !== 1 || !mongoose.connection.db) {
+        this.logger.warn(`⚠️ [MongoDB Atlas] Database not ready (readyState=${mongoose.connection.readyState}). Buffering write [${collectionName}]: ${id}`);
+        return false;
+      }
       const db = mongoose.connection.db;
-      if (!db) return;
       const cleanDoc = { ...doc };
       delete cleanDoc._id;
       await db.collection(collectionName).updateOne(
         { id: id } as any,
-        { $set: cleanDoc, $setOnInsert: { id } },
+        { $set: cleanDoc },
         { upsert: true }
       );
+      this.logger.log(`💾 [MongoDB Atlas] Successfully persisted [${collectionName}] id: ${id}`);
+      return true;
     } catch (err: any) {
-      this.logger.warn(`Failed to persist to MongoDB [${collectionName}]: ${err.message}`);
+      this.logger.error(`❌ Failed to persist to MongoDB [${collectionName}]: ${err.message}`);
+      return false;
     }
   }
 
   public async deleteFromMongo(collectionName: string, id: string) {
     try {
-      if (mongoose.connection.readyState !== 1) return;
+      if (mongoose.connection.readyState !== 1 || !mongoose.connection.db) return;
       const db = mongoose.connection.db;
-      if (!db) return;
       await db.collection(collectionName).deleteOne({ id } as any);
+      this.logger.log(`🗑️ [MongoDB Atlas] Deleted [${collectionName}] id: ${id}`);
     } catch (err: any) {
       this.logger.warn(`Failed to delete from MongoDB [${collectionName}]: ${err.message}`);
+    }
+  }
+
+  public async syncAllPendingToMongo() {
+    if (mongoose.connection.readyState !== 1 || !mongoose.connection.db) return;
+    const db = mongoose.connection.db;
+    try {
+      this.logger.log(`🔄 [MongoDB Atlas] Synchronizing memory records to MongoDB Atlas...`);
+      for (const [id, user] of this.memoryUsers.entries()) {
+        const clean = { ...user };
+        delete clean._id;
+        await db.collection('users').updateOne({ id: id } as any, { $set: clean }, { upsert: true });
+      }
+      for (const [userId, profile] of this.memoryProfiles.entries()) {
+        const clean = { ...profile };
+        delete clean._id;
+        await db.collection('user_profiles').updateOne({ userId } as any, { $set: clean }, { upsert: true });
+      }
+      for (const [id, wallet] of this.memoryWallets.entries()) {
+        const clean = { ...wallet };
+        delete clean._id;
+        await db.collection('wallets').updateOne({ id: id } as any, { $set: clean }, { upsert: true });
+      }
+      for (const [id, acc] of this.memoryLedgerAccounts.entries()) {
+        const clean = { ...acc };
+        delete clean._id;
+        await db.collection('ledger_accounts').updateOne({ id: id } as any, { $set: clean }, { upsert: true });
+      }
+      for (const [id, tx] of this.memoryTransactions.entries()) {
+        const clean = { ...tx };
+        delete clean._id;
+        await db.collection('ledger_transactions').updateOne({ id: id } as any, { $set: clean }, { upsert: true });
+      }
+      for (const [userId, stats] of this.memoryStats.entries()) {
+        const clean = { ...stats };
+        delete clean._id;
+        await db.collection('practice_statistics').updateOne({ userId } as any, { $set: clean }, { upsert: true });
+      }
+      for (const [id, sub] of this.memorySubscriptions.entries()) {
+        const clean = { ...sub };
+        delete clean._id;
+        await db.collection('subscriptions').updateOne({ id: id } as any, { $set: clean }, { upsert: true });
+      }
+      for (const [id, post] of this.memoryPosts.entries()) {
+        const clean = { ...post };
+        delete clean._id;
+        await db.collection('posts').updateOne({ id: id } as any, { $set: clean }, { upsert: true });
+      }
+      this.logger.log(`🌟 [MongoDB Atlas] All memory records successfully synchronized to MongoDB Atlas!`);
+    } catch (e: any) {
+      this.logger.warn(`⚠️ [MongoDB Atlas] Sync error: ${e.message}`);
     }
   }
 
@@ -220,13 +276,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       await this.seedInMemoryDatabase();
       this.attachInMemoryProxy();
 
-      // Attempt to load from MongoDB Atlas
+      // Attempt to load and sync with MongoDB Atlas
       await this.loadFromMongo();
+      await this.syncAllPendingToMongo();
 
       // Whenever MongoDB connects or reconnects, synchronize records
       mongoose.connection.on('connected', async () => {
         this.logger.log('🔄 MongoDB Atlas connected. Synchronizing records with memory cache...');
         await this.loadFromMongo();
+        await this.syncAllPendingToMongo();
       });
     }
   }
@@ -403,7 +461,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         };
         self.memoryUsers.set(u.id, u);
         self.saveToDisk();
-        self.saveToMongo('users', u.id, u);
+        await self.saveToMongo('users', u.id, u);
         return u;
       },
       update: async ({ where, data }: any) => {
@@ -411,7 +469,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         if (u) {
           Object.assign(u, data);
           self.saveToDisk();
-          self.saveToMongo('users', u.id, u);
+          await self.saveToMongo('users', u.id, u);
         }
         return u;
       },
@@ -423,7 +481,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         const p = { id: `p-${Date.now()}`, ...data };
         self.memoryProfiles.set(data.userId, p);
         self.saveToDisk();
-        self.saveToMongo('user_profiles', p.id, p);
+        await self.saveToMongo('user_profiles', p.id, p);
         return p;
       },
       upsert: async ({ where, create, update }: any) => {
@@ -435,7 +493,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           self.memoryProfiles.set(where.userId, p);
         }
         self.saveToDisk();
-        self.saveToMongo('user_profiles', p.id, p);
+        await self.saveToMongo('user_profiles', p.id, p);
         return p;
       },
       update: async ({ where, data }: any) => {
@@ -443,7 +501,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         if (p) {
           Object.assign(p, data);
           self.saveToDisk();
-          self.saveToMongo('user_profiles', p.id, p);
+          await self.saveToMongo('user_profiles', p.id, p);
         }
         return p;
       },
@@ -482,7 +540,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         const w = { id: `w-${Date.now()}`, totalReceived: 0, totalSent: 0, totalEarned: 0, status: 'ACTIVE', ...data };
         self.memoryWallets.set(w.id, w);
         self.saveToDisk();
-        self.saveToMongo('wallets', w.id, w);
+        await self.saveToMongo('wallets', w.id, w);
         return w;
       },
       update: async ({ where, data }: any) => {
@@ -492,7 +550,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         if (data.totalSent?.increment) w.totalSent += data.totalSent.increment;
         if (data.totalReceived?.increment) w.totalReceived += data.totalReceived.increment;
         self.saveToDisk();
-        self.saveToMongo('wallets', w.id, w);
+        await self.saveToMongo('wallets', w.id, w);
         return w;
       },
     };
@@ -502,14 +560,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const acc = { id: `acc-${Date.now()}`, balance: 0, ...data };
         self.memoryLedgerAccounts.set(acc.id, acc);
-        self.saveToMongo('ledger_accounts', acc.id, acc);
+        await self.saveToMongo('ledger_accounts', acc.id, acc);
         return acc;
       },
       update: async ({ where, data }: any) => {
         const acc = self.memoryLedgerAccounts.get(where.id);
         if (acc) {
           Object.assign(acc, data);
-          self.saveToMongo('ledger_accounts', acc.id, acc);
+          await self.saveToMongo('ledger_accounts', acc.id, acc);
         }
         return acc;
       },
@@ -553,14 +611,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const tx = { id: `tx-${Date.now()}-${Math.floor(Math.random() * 1000)}`, createdAt: new Date(), ...data };
         self.memoryTransactions.set(tx.id, tx);
-        self.saveToMongo('ledger_transactions', tx.id, tx);
+        await self.saveToMongo('ledger_transactions', tx.id, tx);
         return tx;
       },
       update: async ({ where, data }: any) => {
         const tx = self.memoryTransactions.get(where.id);
         if (tx) {
           Object.assign(tx, data);
-          self.saveToMongo('ledger_transactions', tx.id, tx);
+          await self.saveToMongo('ledger_transactions', tx.id, tx);
         }
         const sWallet = self.memoryWallets.get(tx.sourceWalletId);
         const tWallet = self.memoryWallets.get(tx.targetWalletId);
@@ -577,7 +635,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const e = { id: `entry-${Date.now()}`, createdAt: new Date(), ...data };
         self.memoryEntries.push(e);
-        self.saveToMongo('ledger_entries', e.id, e);
+        await self.saveToMongo('ledger_entries', e.id, e);
         return e;
       },
     };
@@ -588,7 +646,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const s = { id: `s-${Date.now()}`, ...data };
         self.memoryStats.set(data.userId, s);
-        self.saveToMongo('practice_statistics', s.id, s);
+        await self.saveToMongo('practice_statistics', s.id, s);
         return s;
       },
       upsert: async ({ where, create, update }: any) => {
@@ -603,7 +661,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           s = { id: `s-${Date.now()}`, ...create };
           self.memoryStats.set(where.userId, s);
         }
-        self.saveToMongo('practice_statistics', s.id, s);
+        await self.saveToMongo('practice_statistics', s.id, s);
         return s;
       },
       aggregate: async () => {
@@ -623,7 +681,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const s = { id: `sess-${Date.now()}`, ...data };
         self.memorySessions.push(s);
-        self.saveToMongo('counter_sessions', s.id, s);
+        await self.saveToMongo('counter_sessions', s.id, s);
         return s;
       },
       findMany: async ({ where }: any) => self.memorySessions.filter((s) => s.userId === where.userId),
@@ -642,7 +700,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       findUnique: async () => null,
       upsert: async ({ create }: any) => {
         self.memoryFriends.push(create);
-        self.saveToMongo('friends', `${create.userId}_${create.friendId}`, create);
+        await self.saveToMongo('friends', `${create.userId}_${create.friendId}`, create);
         return create;
       },
       deleteMany: async ({ where }: any) => {
@@ -672,20 +730,20 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       upsert: async ({ create }: any) => {
         const req = { id: `req-${Date.now()}`, ...create };
         self.memoryFriendRequests.set(req.id, req);
-        self.saveToMongo('friend_requests', req.id, req);
+        await self.saveToMongo('friend_requests', req.id, req);
         return req;
       },
       update: async ({ where, data }: any) => {
         const r = self.memoryFriendRequests.get(where.id);
         if (r) {
           Object.assign(r, data);
-          self.saveToMongo('friend_requests', r.id, r);
+          await self.saveToMongo('friend_requests', r.id, r);
         }
         return r;
       },
       delete: async ({ where }: any) => {
         self.memoryFriendRequests.delete(where.id);
-        self.deleteFromMongo('friend_requests', where.id);
+        await self.deleteFromMongo('friend_requests', where.id);
         return { id: where.id };
       },
       deleteMany: async () => ({ count: 1 }),
@@ -707,7 +765,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const p = { id: `post-${Date.now()}`, likesCount: 0, commentsCount: 0, createdAt: new Date(), ...data };
         self.memoryPosts.set(p.id, p);
-        self.saveToMongo('posts', p.id, p);
+        await self.saveToMongo('posts', p.id, p);
         return {
           ...p,
           user: enrichUser(self.memoryUsers.get(p.userId), { profile: true }),
@@ -720,13 +778,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           if (data.likesCount?.increment) p.likesCount += 1;
           if (data.likesCount?.decrement) p.likesCount = Math.max(0, p.likesCount - 1);
           if (data.commentsCount?.increment) p.commentsCount += 1;
-          self.saveToMongo('posts', p.id, p);
+          await self.saveToMongo('posts', p.id, p);
         }
         return p;
       },
       delete: async ({ where }: any) => {
         self.memoryPosts.delete(where.id);
-        self.deleteFromMongo('posts', where.id);
+        await self.deleteFromMongo('posts', where.id);
         return { id: where.id };
       },
     };
@@ -737,7 +795,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const l = { id: `like-${Date.now()}`, ...data };
         self.memoryLikes.set(l.id, l);
-        self.saveToMongo('likes', l.id, l);
+        await self.saveToMongo('likes', l.id, l);
         return l;
       },
       delete: async () => ({ count: 1 }),
@@ -748,7 +806,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const c = { id: `c-${Date.now()}`, createdAt: new Date(), ...data };
         self.memoryComments.set(c.id, c);
-        self.saveToMongo('comments', c.id, c);
+        await self.saveToMongo('comments', c.id, c);
         return {
           ...c,
           user: enrichUser(self.memoryUsers.get(c.userId), { profile: true }),
@@ -769,7 +827,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         const c = { id: `conv-${Date.now()}`, ...data };
         self.memoryConversations.set(key, c);
         self.memoryConversations.set(c.id, c);
-        self.saveToMongo('conversations', c.id, c);
+        await self.saveToMongo('conversations', c.id, c);
         return c;
       },
       update: async () => ({}),
@@ -780,7 +838,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const m = { id: `msg-${Date.now()}`, createdAt: new Date(), ...data };
         self.memoryMessages.push(m);
-        self.saveToMongo('messages', m.id, m);
+        await self.saveToMongo('messages', m.id, m);
         return { ...m, sender: enrichUser(self.memoryUsers.get(m.senderId), { profile: true }) };
       },
       count: async () => 0,
@@ -794,7 +852,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const n = { id: `notif-${Date.now()}`, createdAt: new Date(), isRead: false, ...data };
         self.memoryNotifications.push(n);
-        self.saveToMongo('notifications', n.id, n);
+        await self.saveToMongo('notifications', n.id, n);
         return n;
       },
       updateMany: async () => ({ count: 1 }),
@@ -819,7 +877,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       create: async ({ data }: any) => {
         const s = { id: `sub-${Date.now()}`, plan: 'FREE', status: 'ACTIVE', ...data };
         self.memorySubscriptions.set(s.id, s);
-        self.saveToMongo('subscriptions', s.id, s);
+        await self.saveToMongo('subscriptions', s.id, s);
         return s;
       },
       count: async () => 1,

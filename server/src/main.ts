@@ -6,11 +6,13 @@ import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
-// Use public DNS resolvers on Windows to resolve MongoDB Atlas SRV records
-try {
-  dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
-} catch (e) {
-  // Ignore in restricted environments
+// Use public DNS resolvers on Windows only (do not override Linux container / Render DNS)
+if (process.platform === 'win32') {
+  try {
+    dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+  } catch (e) {
+    // Ignore in restricted environments
+  }
 }
 
 // Global process error handlers to prevent unexpected background exits
