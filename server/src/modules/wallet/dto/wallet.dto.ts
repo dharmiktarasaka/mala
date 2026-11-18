@@ -18,6 +18,16 @@ export class TransferMalaDto {
   @IsOptional()
   note?: string;
 
+  @ApiProperty({
+    description: 'Pocket from which Mala should be offered',
+    example: 'ram_ram',
+    required: false,
+    enum: ['divya_mahamala', 'jackpot', 'ram_ram', 'extra', 'bonus', 'daily_sankalp'],
+  })
+  @IsString()
+  @IsOptional()
+  pocket?: string;
+
   @ApiProperty({ description: 'Idempotency key to prevent double transfers', example: 'b947c1b5-6f1c-4b36-9289-4e4b78912d8a' })
   @IsString()
   @IsOptional()
@@ -34,5 +44,14 @@ export class VerifyRecipientDto {
   @IsNumber()
   @IsPositive()
   amount: number;
+
+  @ApiProperty({
+    description: 'Pocket from which Mala will be offered',
+    example: 'ram_ram',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  pocket?: string;
 }
 

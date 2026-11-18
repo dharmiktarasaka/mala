@@ -67,6 +67,7 @@ export class WalletService {
     return {
       walletId: wallet.id,
       balance: wallet.balance,
+      pockets: (wallet as any)?.pockets,
       totalReceived: wallet.totalReceived,
       totalSent: wallet.totalSent,
       totalEarned: wallet.totalEarned,
@@ -92,6 +93,10 @@ export class WalletService {
     }
 
     const cleanId = dto.identifier.replace(/^[#@]/, '').trim();
+    if (!cleanId) {
+      throw new BadRequestException('Recipient identifier cannot be empty');
+    }
+
     const recipient: any = await this.prisma.user.findFirst({
       where: {
         OR: [
@@ -107,8 +112,26 @@ export class WalletService {
       },
     });
 
+    const remainingBalance = senderWallet.balance - dto.amount;
+    const canAfford = remainingBalance >= 0;
+
+    // Devotee not found in DB: Support Universal Offering and permanent history recording
     if (!recipient) {
-      throw new NotFoundException(`Devotee with ID or username '${dto.identifier}' not found. Please verify the 6-digit Devotee Number or username.`);
+      return {
+        recipient: {
+          userId: `ext-${cleanId}`,
+          devoteeId: cleanId,
+          username: cleanId,
+          displayName: cleanId,
+          isExternal: true,
+          note: 'Spiritual Offering (Universal Devotee)',
+        },
+        transferAmount: dto.amount,
+        currentBalance: senderWallet.balance,
+        remainingBalance,
+        canAfford,
+        isExternal: true,
+      };
     }
 
     if (recipient.id === userId || recipient.devoteeId === userId) {
@@ -119,9 +142,6 @@ export class WalletService {
       throw new BadRequestException('Recipient account is not active');
     }
 
-    const remainingBalance = senderWallet.balance - dto.amount;
-    const canAfford = remainingBalance >= 0;
-
     return {
       recipient: {
         userId: recipient.id,
@@ -129,11 +149,13 @@ export class WalletService {
         username: recipient.username,
         displayName: recipient.profile?.displayName || recipient.username,
         avatarUrl: recipient.profile?.avatarUrl,
+        isExternal: false,
       },
       transferAmount: dto.amount,
       currentBalance: senderWallet.balance,
       remainingBalance,
       canAfford,
+      isExternal: false,
     };
   }
 
@@ -142,6 +164,7 @@ export class WalletService {
       senderUserId: userId,
       recipientIdentifier: dto.recipientIdentifier,
       amount: dto.amount,
+      pocket: dto.pocket,
       idempotencyKey: dto.idempotencyKey,
       referenceNote: dto.note,
     });
@@ -255,6 +278,15 @@ export class WalletService {
       direction = 'RECEIVED';
     }
 
+    let meta: any = {};
+    try {
+      if (typeof tx.metadata === 'string') meta = JSON.parse(tx.metadata);
+      else if (tx.metadata) meta = tx.metadata;
+    } catch {}
+
+    const isExternal = Boolean(meta.isExternal || !tx.targetWalletId);
+    const extRecipient = meta.recipientIdentifier || 'Devotee';
+
     return {
       id: tx.id,
       transactionType: tx.transactionType,
@@ -262,19 +294,29 @@ export class WalletService {
       amount: tx.amount,
       direction,
       note: tx.referenceNote,
+      pocket: meta.pocket,
       createdAt: tx.createdAt,
       counterparty: direction === 'SENT'
-        ? {
-            userId: tx.targetWallet?.user?.id,
-            username: tx.targetWallet?.user?.username,
-            displayName: tx.targetWallet?.user?.profile?.displayName,
-            avatarUrl: tx.targetWallet?.user?.profile?.avatarUrl,
-          }
+        ? (isExternal
+            ? {
+                userId: `ext-${extRecipient}`,
+                username: extRecipient,
+                displayName: extRecipient,
+                isExternal: true,
+              }
+            : {
+                userId: tx.targetWallet?.user?.id,
+                username: tx.targetWallet?.user?.username,
+                displayName: tx.targetWallet?.user?.profile?.displayName,
+                avatarUrl: tx.targetWallet?.user?.profile?.avatarUrl,
+                isExternal: false,
+              })
         : {
             userId: tx.sourceWallet?.user?.id,
             username: tx.sourceWallet?.user?.username,
             displayName: tx.sourceWallet?.user?.profile?.displayName,
             avatarUrl: tx.sourceWallet?.user?.profile?.avatarUrl,
+            isExternal: false,
           },
     };
   }

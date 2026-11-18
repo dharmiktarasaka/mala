@@ -8,6 +8,14 @@ export interface User {
   displayName: string;
   avatarUrl?: string;
   walletBalance: number;
+  pockets?: {
+    divya_mahamala: number;
+    jackpot: number;
+    ram_ram: number;
+    extra: number;
+    bonus: number;
+    daily_sankalp: number;
+  };
 }
 
 export interface UserProfile {
@@ -25,6 +33,14 @@ export interface UserProfile {
 export interface WalletDashboard {
   walletId: string;
   balance: number;
+  pockets?: {
+    divya_mahamala: number;
+    jackpot: number;
+    ram_ram: number;
+    extra: number;
+    bonus: number;
+    daily_sankalp: number;
+  };
   totalReceived: number;
   totalSent: number;
   totalEarned: number;
@@ -43,12 +59,14 @@ export interface TransactionSummary {
   amount: number;
   direction: 'SENT' | 'RECEIVED' | 'SYSTEM';
   note?: string;
+  pocket?: string;
   createdAt: string;
   counterparty: {
     userId?: string;
     username?: string;
     displayName?: string;
     avatarUrl?: string;
+    isExternal?: boolean;
   };
 }
 
@@ -57,18 +75,21 @@ export interface TransferReceipt {
   status: string;
   amount: number;
   note?: string;
+  pocket?: string;
   createdAt: string;
   sender: {
     userId: string;
     username: string;
     displayName: string;
     remainingBalance: number;
+    pockets?: Record<string, number>;
   };
   recipient: {
-    userId: string;
+    userId?: string;
     username: string;
     displayName: string;
-    newBalance: number;
+    newBalance?: number;
+    isExternal?: boolean;
   };
 }
 

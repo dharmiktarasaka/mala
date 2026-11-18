@@ -28,6 +28,7 @@ export default function CounterScreen() {
     soundEnabled,
     vibrationEnabled,
     setStatsFromServer,
+    selectedMalaType,
   } = useCounterStore();
 
   const [saving, setSaving] = useState(false);
@@ -47,16 +48,23 @@ export default function CounterScreen() {
         completedTarget: sessionCount >= targetCount,
         soundEnabled,
         vibrationEnabled,
+        malaType: selectedMalaType,
       });
 
       if (res.data?.statistics) {
         setStatsFromServer(res.data.statistics);
       }
+      if (res.data?.pockets) {
+        useAuthStore.getState().updatePockets(res.data.pockets);
+      }
+      if (res.data?.walletBalance !== undefined) {
+        useAuthStore.getState().updateWalletBalance(res.data.walletBalance);
+      }
 
       resetSession();
       Alert.alert(
         'Sadhana Saved! 🙏',
-        `Successfully recorded ${sessionCount} Mala counts to your personal practice statistics.`,
+        `Successfully recorded ${sessionCount} Mala counts and credited to your Sacred Mala Pocket.`,
       );
     } catch (err: any) {
       Alert.alert(

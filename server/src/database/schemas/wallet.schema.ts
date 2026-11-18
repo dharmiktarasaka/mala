@@ -26,6 +26,26 @@ export class Wallet extends Document {
 
   @Prop({ default: 0 })
   totalSent: number;
+
+  @Prop({
+    type: Object,
+    default: () => ({
+      divya_mahamala: 18,
+      jackpot: 11,
+      ram_ram: 28,
+      extra: 10,
+      bonus: 11,
+      daily_sankalp: 30,
+    }),
+  })
+  pockets?: {
+    divya_mahamala: number;
+    jackpot: number;
+    ram_ram: number;
+    extra: number;
+    bonus: number;
+    daily_sankalp: number;
+  };
 }
 
 export const WalletSchema = SchemaFactory.createForClass(Wallet);

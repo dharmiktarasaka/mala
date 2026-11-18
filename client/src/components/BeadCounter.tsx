@@ -1,9 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
 import { useCounterStore } from '../store/counterStore';
 import { useThemeStore } from '../store/themeStore';
+import { useAuthStore } from '../store/authStore';
+import { MALA_POCKETS, MalaPocketId } from '../constants/malaTypes';
 
 const { width } = Dimensions.get('window');
 const COUNTER_SIZE = Math.min(width * 0.72, 280);
@@ -15,6 +17,7 @@ interface BeadCounterProps {
 export const BeadCounter: React.FC<BeadCounterProps> = ({ onSaveSession }) => {
   const { mode, t } = useThemeStore();
   const theme = Colors[mode];
+  const { user } = useAuthStore();
 
   const {
     sessionCount,
@@ -29,20 +32,123 @@ export const BeadCounter: React.FC<BeadCounterProps> = ({ onSaveSession }) => {
     toggleVibration,
     targetCompletedAnimation,
     dismissTargetAnimation,
+    selectedMalaType,
+    setSelectedMalaType,
   } = useCounterStore();
+
+  const activePocket = MALA_POCKETS.find((p) => p.id === selectedMalaType) || MALA_POCKETS[5];
+  const pocketCount = (user?.pockets as any)?.[selectedMalaType] ?? 0;
 
   const targets = [11, 21, 51, 108, 1008];
   const progressPercent = Math.min(100, Math.round((sessionCount / targetCount) * 100));
 
   return (
     <View style={styles.container}>
+      {/* 6 Mala Jaap Categories & Pockets Selector Bar */}
+      <View style={styles.pocketsSection}>
+        <View style={styles.pocketsHeader}>
+          <Text style={[styles.pocketsSectionTitle, { color: theme.textPrimary }]}>
+            Select Mala Jaap Type
+          </Text>
+          <Text style={[styles.pocketsSectionSub, { color: activePocket.color }]}>
+            {activePocket.symbol} {activePocket.hindiTitle}
+          </Text>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.pocketsScroll}
+        >
+          {MALA_POCKETS.map((pocket) => {
+            const isSelected = selectedMalaType === pocket.id;
+            const count = (user?.pockets as any)?.[pocket.id] ?? 0;
+            return (
+              <TouchableOpacity
+                key={pocket.id}
+                onPress={() => setSelectedMalaType(pocket.id)}
+                activeOpacity={0.8}
+                style={[
+                  styles.pocketChip,
+                  {
+                    backgroundColor: isSelected ? pocket.bgLight : theme.surface,
+                    borderColor: isSelected ? pocket.color : theme.border,
+                    borderWidth: isSelected ? 2 : 1,
+                  },
+                ]}
+              >
+                <Text style={styles.pocketChipSymbol}>{pocket.symbol}</Text>
+                <View style={styles.pocketChipInfo}>
+                  <Text
+                    style={[
+                      styles.pocketChipTitle,
+                      { color: isSelected ? pocket.color : theme.textPrimary },
+                    ]}
+                  >
+                    {pocket.title}
+                  </Text>
+                  <Text style={[styles.pocketChipHindi, { color: theme.textSecondary }]}>
+                    {pocket.hindiTitle}
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.pocketBadge,
+                    {
+                      backgroundColor: isSelected ? pocket.color : theme.surfaceSubtle,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.pocketBadgeText,
+                      { color: isSelected ? '#FFFFFF' : theme.textSecondary },
+                    ]}
+                  >
+                    {count}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* Active Mala Details Card */}
+        <View
+          style={[
+            styles.activeMalaCard,
+            {
+              backgroundColor: activePocket.bgLight,
+              borderColor: activePocket.borderColor,
+            },
+          ]}
+        >
+          <View style={styles.activeMalaRow}>
+            <Text style={styles.activeMalaIcon}>{activePocket.symbol}</Text>
+            <View style={{ flex: 1 }}>
+              <View style={styles.activeMalaTitleRow}>
+                <Text style={[styles.activeMalaTitle, { color: activePocket.color }]}>
+                  {activePocket.title} ({activePocket.hindiTitle})
+                </Text>
+                <View style={[styles.pocketCountPill, { backgroundColor: activePocket.color }]}>
+                  <Text style={styles.pocketCountPillText}>
+                    Vault: {pocketCount} Mala
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.activeMalaDesc}>{activePocket.description}</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
       {/* Target celebration banner */}
       {targetCompletedAnimation && (
         <View style={styles.celebrationCard}>
-          <Text style={styles.celebrationOm}>🕉️ 🌸 🕉️</Text>
+          <Text style={styles.celebrationOm}>🕉️ {activePocket.symbol} 🕉️</Text>
           <Text style={styles.celebrationTitle}>Target Reached: {targetCount} Mala!</Text>
           <Text style={styles.celebrationSub}>
-            Divine blessings and peaceful energy granted.
+            Divine blessings credited to your {activePocket.title} Pocket!
           </Text>
           <TouchableOpacity onPress={dismissTargetAnimation} style={styles.dismissBtn}>
             <Text style={styles.dismissText}>Continue Sadhana</Text>
@@ -61,7 +167,7 @@ export const BeadCounter: React.FC<BeadCounterProps> = ({ onSaveSession }) => {
               style={[
                 styles.targetPill,
                 isSelected
-                  ? { backgroundColor: Colors.primary, borderColor: Colors.primary }
+                  ? { backgroundColor: activePocket.color, borderColor: activePocket.color }
                   : { backgroundColor: theme.surface, borderColor: theme.border },
               ]}
             >
@@ -84,7 +190,7 @@ export const BeadCounter: React.FC<BeadCounterProps> = ({ onSaveSession }) => {
         <View
           style={[
             styles.beadRing,
-            { borderColor: Colors.accentGold, backgroundColor: theme.surfaceSubtle },
+            { borderColor: activePocket.color, backgroundColor: theme.surfaceSubtle },
           ]}
         >
           {/* Main Tap-to-Count Circle */}
@@ -93,11 +199,11 @@ export const BeadCounter: React.FC<BeadCounterProps> = ({ onSaveSession }) => {
             onPress={increment}
             style={[
               styles.counterCircle,
-              { backgroundColor: theme.surface, shadowColor: Colors.primary },
+              { backgroundColor: theme.surface, shadowColor: activePocket.color },
             ]}
           >
-            <Text style={[styles.targetSmall, { color: Colors.primary }]}>
-              {t('target')}: {targetCount}
+            <Text style={[styles.targetSmall, { color: activePocket.color }]}>
+              {activePocket.title} • {t('target')}: {targetCount}
             </Text>
             <Text style={[styles.largeCountNumber, { color: theme.textPrimary }]}>
               {sessionCount}
@@ -111,11 +217,11 @@ export const BeadCounter: React.FC<BeadCounterProps> = ({ onSaveSession }) => {
               <View
                 style={[
                   styles.progressBarFill,
-                  { width: `${progressPercent}%`, backgroundColor: Colors.primary },
+                  { width: `${progressPercent}%`, backgroundColor: activePocket.color },
                 ]}
               />
             </View>
-            <Text style={[styles.progressText, { color: Colors.accentGoldDark }]}>
+            <Text style={[styles.progressText, { color: activePocket.color }]}>
               {progressPercent}% Completed
             </Text>
           </TouchableOpacity>
@@ -147,7 +253,7 @@ export const BeadCounter: React.FC<BeadCounterProps> = ({ onSaveSession }) => {
         {onSaveSession && (
           <TouchableOpacity
             onPress={onSaveSession}
-            style={[styles.controlBtn, styles.saveBtn]}
+            style={[styles.controlBtn, styles.saveBtn, { backgroundColor: activePocket.color, borderColor: activePocket.color }]}
           >
             <Ionicons name="checkmark-done" size={20} color="#FFFFFF" />
             <Text style={[styles.controlBtnText, { color: '#FFFFFF' }]}>
@@ -163,7 +269,7 @@ export const BeadCounter: React.FC<BeadCounterProps> = ({ onSaveSession }) => {
           <Ionicons
             name={soundEnabled ? 'volume-high-outline' : 'volume-mute-outline'}
             size={20}
-            color={soundEnabled ? Colors.primary : theme.textMuted}
+            color={soundEnabled ? activePocket.color : theme.textMuted}
           />
           <Text style={[styles.toggleText, { color: theme.textSecondary }]}>
             Sound {soundEnabled ? 'ON' : 'OFF'}
@@ -176,7 +282,7 @@ export const BeadCounter: React.FC<BeadCounterProps> = ({ onSaveSession }) => {
           <Ionicons
             name={vibrationEnabled ? 'radio-outline' : 'radio-button-off-outline'}
             size={20}
-            color={vibrationEnabled ? Colors.primary : theme.textMuted}
+            color={vibrationEnabled ? activePocket.color : theme.textMuted}
           />
           <Text style={[styles.toggleText, { color: theme.textSecondary }]}>
             Haptic {vibrationEnabled ? 'ON' : 'OFF'}
@@ -192,6 +298,104 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     paddingVertical: 12,
+  },
+  pocketsSection: {
+    width: '100%',
+    marginBottom: 16,
+  },
+  pocketsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    marginBottom: 8,
+  },
+  pocketsSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  pocketsSectionSub: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  pocketsScroll: {
+    gap: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+  },
+  pocketChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 14,
+    gap: 8,
+  },
+  pocketChipSymbol: {
+    fontSize: 18,
+  },
+  pocketChipInfo: {
+    justifyContent: 'center',
+  },
+  pocketChipTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  pocketChipHindi: {
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  pocketBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 22,
+    alignItems: 'center',
+  },
+  pocketBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  activeMalaCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    marginTop: 10,
+  },
+  activeMalaRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
+  activeMalaIcon: {
+    fontSize: 26,
+  },
+  activeMalaTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 3,
+  },
+  activeMalaTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  pocketCountPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  pocketCountPillText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  activeMalaDesc: {
+    fontSize: 11,
+    color: '#6B7280',
+    lineHeight: 15,
   },
   targetsRow: {
     flexDirection: 'row',

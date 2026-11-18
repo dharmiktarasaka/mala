@@ -19,6 +19,7 @@ import { useThemeStore } from '../../src/store/themeStore';
 import { useCounterStore } from '../../src/store/counterStore';
 import { apiClient } from '../../src/api/client';
 import { AchievementItem } from '../../src/types';
+import { MALA_POCKETS } from '../../src/constants/malaTypes';
 
 export default function ProfileScreen() {
   const { user, logout, updateWalletBalance } = useAuthStore();
@@ -46,6 +47,9 @@ export default function ProfileScreen() {
         setProfileData(profRes.data);
         if (profRes.data.wallet?.balance !== undefined) {
           updateWalletBalance(profRes.data.wallet.balance);
+        }
+        if (profRes.data.wallet?.pockets) {
+          useAuthStore.getState().updatePockets(profRes.data.wallet.pockets);
         }
         setIsPrivate(profRes.data.profile?.isPrivate || false);
         setShowMalaCount(profRes.data.profile?.showMalaCount ?? true);
@@ -242,6 +246,32 @@ export default function ProfileScreen() {
                 -{profileData?.wallet?.totalSent ?? 0} Mala
               </Text>
             </View>
+          </View>
+
+          {/* 6 Mala Pockets Breakdown Mini Grid */}
+          <View style={styles.pocketsMiniGrid}>
+            {MALA_POCKETS.map((pkt) => {
+              const count = (profileData?.wallet?.pockets || (user?.pockets as any))?.[pkt.id] ?? 0;
+              return (
+                <View
+                  key={pkt.id}
+                  style={[
+                    styles.pocketMiniPill,
+                    { backgroundColor: pkt.bgLight, borderColor: pkt.borderColor },
+                  ]}
+                >
+                  <Text style={{ fontSize: 13 }}>{pkt.symbol}</Text>
+                  <View style={{ flex: 1, marginHorizontal: 4 }}>
+                    <Text style={[styles.pocketMiniName, { color: pkt.color }]} numberOfLines={1}>
+                      {pkt.title}
+                    </Text>
+                  </View>
+                  <Text style={[styles.pocketMiniCount, { color: pkt.color }]}>
+                    {count}
+                  </Text>
+                </View>
+              );
+            })}
           </View>
 
           {/* Action Buttons: Send Mala & Full Wallet */}
@@ -737,6 +767,30 @@ const styles = StyleSheet.create({
     width: 1,
     height: 32,
     backgroundColor: '#EBE5DC',
+  },
+  pocketsMiniGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 14,
+  },
+  pocketMiniPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '48%',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    justifyContent: 'space-between',
+  },
+  pocketMiniName: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  pocketMiniCount: {
+    fontSize: 12,
+    fontWeight: '800',
   },
   walletActionsRow: {
     flexDirection: 'row',

@@ -50,6 +50,7 @@ export class UsersService {
       profile: user.profile,
       wallet: {
         balance: wallet?.balance ?? 108,
+        pockets: (wallet as any)?.pockets,
         totalReceived: wallet?.totalReceived ?? 0,
         totalSent: wallet?.totalSent ?? 0,
         totalEarned: wallet?.totalEarned ?? 108,

@@ -548,6 +548,31 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       },
     };
 
+    // Helper to ensure 6 Mala pockets are always initialized
+    const ensurePockets = (wallet: any) => {
+      if (!wallet) return null;
+      if (!wallet.pockets || typeof wallet.pockets !== 'object') {
+        wallet.pockets = {
+          divya_mahamala: 18,
+          jackpot: 11,
+          ram_ram: 28,
+          extra: 10,
+          bonus: 11,
+          daily_sankalp: 30,
+        };
+      } else {
+        wallet.pockets = {
+          divya_mahamala: Number(wallet.pockets.divya_mahamala ?? 18),
+          jackpot: Number(wallet.pockets.jackpot ?? 11),
+          ram_ram: Number(wallet.pockets.ram_ram ?? 28),
+          extra: Number(wallet.pockets.extra ?? 10),
+          bonus: Number(wallet.pockets.bonus ?? 11),
+          daily_sankalp: Number(wallet.pockets.daily_sankalp ?? 30),
+        };
+      }
+      return wallet.pockets;
+    };
+
     // Override Wallet
     (this as any).wallet = {
       findUnique: async ({ where, include }: any) => {
@@ -576,6 +601,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             totalSent: 0,
             totalEarned: 108,
             status: 'ACTIVE',
+            pockets: {
+              divya_mahamala: 18,
+              jackpot: 11,
+              ram_ram: 28,
+              extra: 10,
+              bonus: 11,
+              daily_sankalp: 30,
+            },
             createdAt: new Date(),
           };
           self.memoryWallets.set(w.id, w);
@@ -584,10 +617,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         }
         if (!w) return null;
 
+        ensurePockets(w);
+
         // Auto-seed starter 108 Mala if uninitialized
         if (w.balance === 0 && (!w.totalEarned || w.totalEarned === 0) && (!w.totalSent || w.totalSent === 0)) {
           w.balance = 108;
           w.totalEarned = 108;
+          ensurePockets(w);
           self.memoryWallets.set(w.id, w);
           self.saveToDisk();
           await self.saveToMongo('wallets', w.id, w);
@@ -603,7 +639,24 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         return copy;
       },
       create: async ({ data }: any) => {
-        const w = { id: `w-${Date.now()}`, totalReceived: 0, totalSent: 0, totalEarned: 108, status: 'ACTIVE', balance: 108, ...data };
+        const w = {
+          id: `w-${Date.now()}`,
+          totalReceived: 0,
+          totalSent: 0,
+          totalEarned: 108,
+          status: 'ACTIVE',
+          balance: 108,
+          pockets: {
+            divya_mahamala: 18,
+            jackpot: 11,
+            ram_ram: 28,
+            extra: 10,
+            bonus: 11,
+            daily_sankalp: 30,
+          },
+          ...data,
+        };
+        ensurePockets(w);
         self.memoryWallets.set(w.id, w);
         self.saveToDisk();
         await self.saveToMongo('wallets', w.id, w);
@@ -628,6 +681,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           } catch {}
         }
         if (!w) return null;
+
+        ensurePockets(w);
 
         if (typeof data.balance === 'number') {
           w.balance = data.balance;
@@ -655,6 +710,39 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           w.totalEarned = data.totalEarned;
         }
 
+        if (data.pocketCredit) {
+          const { pocket, amount } = data.pocketCredit;
+          if (pocket && amount) {
+            w.pockets[pocket] = (w.pockets[pocket] || 0) + amount;
+          }
+        }
+
+        if (data.pocketDebit) {
+          const { pocket, amount } = data.pocketDebit;
+          if (pocket && amount) {
+            if ((w.pockets[pocket] || 0) >= amount) {
+              w.pockets[pocket] = (w.pockets[pocket] || 0) - amount;
+            } else {
+              let rem = amount;
+              if (w.pockets[pocket]) {
+                rem -= w.pockets[pocket];
+                w.pockets[pocket] = 0;
+              }
+              for (const pk of ['daily_sankalp', 'ram_ram', 'bonus', 'extra', 'jackpot', 'divya_mahamala']) {
+                if (rem <= 0) break;
+                const c = w.pockets[pk] || 0;
+                const d = Math.min(c, rem);
+                w.pockets[pk] = c - d;
+                rem -= d;
+              }
+            }
+          }
+        }
+
+        if (data.pockets) {
+          w.pockets = { ...w.pockets, ...data.pockets };
+        }
+
         self.saveToDisk();
         await self.saveToMongo('wallets', w.id, w);
         return { ...w };
@@ -663,6 +751,22 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
     // Override LedgerAccount
     (this as any).ledgerAccount = {
+      findFirst: async ({ where }: any = {}) => {
+        let list = Array.from(self.memoryLedgerAccounts.values());
+        if (where?.accountType) list = list.filter((a) => a.accountType === where.accountType);
+        if (where?.walletId) list = list.filter((a) => a.walletId === where.walletId);
+        return list[0] || null;
+      },
+      findUnique: async ({ where }: any = {}) => {
+        if (where?.id) return self.memoryLedgerAccounts.get(where.id) || null;
+        return null;
+      },
+      findMany: async ({ where }: any = {}) => {
+        let list = Array.from(self.memoryLedgerAccounts.values());
+        if (where?.walletId) list = list.filter((a) => a.walletId === where.walletId);
+        if (where?.accountType) list = list.filter((a) => a.accountType === where.accountType);
+        return list;
+      },
       create: async ({ data }: any) => {
         const acc = { id: `acc-${Date.now()}`, balance: 0, ...data };
         self.memoryLedgerAccounts.set(acc.id, acc);
@@ -697,8 +801,28 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           entries: self.memoryEntries.filter((e) => e.transactionId === tx.id),
         };
       },
-      findMany: async () => {
-        const list = Array.from(self.memoryTransactions.values()).map((tx) => {
+      findMany: async (args?: any) => {
+        let list = Array.from(self.memoryTransactions.values());
+        if (args?.where) {
+          const w = args.where;
+          list = list.filter((tx) => {
+            if (w.OR && Array.isArray(w.OR)) {
+              return w.OR.some((cond: any) => {
+                if (cond.sourceWalletId && tx.sourceWalletId === cond.sourceWalletId) return true;
+                if (cond.targetWalletId && tx.targetWalletId === cond.targetWalletId) return true;
+                return false;
+              });
+            }
+            if (w.sourceWalletId && tx.sourceWalletId !== w.sourceWalletId) return false;
+            if (w.targetWalletId && tx.targetWalletId !== w.targetWalletId) return false;
+            return true;
+          });
+        }
+        list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        if (args?.take && typeof args.take === 'number') {
+          list = list.slice(0, args.take);
+        }
+        return list.map((tx) => {
           const sWallet = self.memoryWallets.get(tx.sourceWalletId);
           const tWallet = self.memoryWallets.get(tx.targetWalletId);
           return {
@@ -707,7 +831,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             targetWallet: tWallet ? { ...tWallet, user: enrichUser(self.memoryUsers.get(tWallet.userId), { profile: true }) } : null,
           };
         });
-        return list;
       },
       count: async () => self.memoryTransactions.size,
       aggregate: async () => {

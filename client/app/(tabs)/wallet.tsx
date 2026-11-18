@@ -19,6 +19,8 @@ import { apiClient } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 import { useThemeStore } from '../../src/store/themeStore';
 import { TransactionSummary, WalletDashboard } from '../../src/types';
+import { MALA_POCKETS, MalaPocketId } from '../../src/constants/malaTypes';
+import { useCounterStore } from '../../src/store/counterStore';
 
 export default function WalletScreen() {
   const { user } = useAuthStore();
@@ -43,6 +45,9 @@ export default function WalletScreen() {
         setWallet(walletRes.data);
         if (walletRes.data.balance !== undefined) {
           useAuthStore.getState().updateWalletBalance(walletRes.data.balance);
+        }
+        if (walletRes.data.pockets) {
+          useAuthStore.getState().updatePockets(walletRes.data.pockets);
         }
       }
       if (txRes.data?.items) {
@@ -109,6 +114,81 @@ export default function WalletScreen() {
           <Text style={styles.securityBannerText}>
             Protected by Double-Entry Ledger Bookkeeping & Row Concurrency Locks
           </Text>
+        </View>
+
+        {/* 6 Sacred Mala Pockets Section */}
+        <View style={styles.pocketsSection}>
+          <View style={styles.pocketsHeaderRow}>
+            <View>
+              <Text style={[styles.pocketsTitle, { color: theme.textPrimary }]}>
+                6 Sacred Mala Pockets
+              </Text>
+              <Text style={[styles.pocketsSubtitle, { color: theme.textSecondary }]}>
+                ६ पवित्र माला पॉकेट्स • Dedicated Devotional Vaults
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.pocketsGrid}>
+            {MALA_POCKETS.map((pkt) => {
+              const count = (wallet?.pockets || (user?.pockets as any))?.[pkt.id] ?? 0;
+              return (
+                <View
+                  key={pkt.id}
+                  style={[
+                    styles.pocketCard,
+                    {
+                      backgroundColor: pkt.bgLight,
+                      borderColor: pkt.borderColor,
+                    },
+                  ]}
+                >
+                  <View style={styles.pocketCardTop}>
+                    <Text style={styles.pocketSymbol}>{pkt.symbol}</Text>
+                    <View style={[styles.pocketBalanceBadge, { backgroundColor: pkt.color }]}>
+                      <Text style={styles.pocketBalanceText}>{count} Mala</Text>
+                    </View>
+                  </View>
+
+                  <Text style={[styles.pocketCardTitle, { color: pkt.color }]}>
+                    {pkt.title}
+                  </Text>
+                  <Text style={[styles.pocketCardHindi, { color: theme.textSecondary }]}>
+                    {pkt.hindiTitle}
+                  </Text>
+                  <Text style={styles.pocketCardDesc} numberOfLines={2}>
+                    {pkt.subtitle}
+                  </Text>
+
+                  <View style={styles.pocketActionsRow}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        useCounterStore.getState().setSelectedMalaType(pkt.id);
+                        router.push('/(tabs)/counter');
+                      }}
+                      style={[styles.pocketActionBtn, { backgroundColor: pkt.color }]}
+                    >
+                      <Ionicons name="finger-print-outline" size={12} color="#FFFFFF" />
+                      <Text style={styles.pocketActionBtnText}>Chant</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => {
+                        router.push({
+                          pathname: '/transfer/send',
+                          params: { pocket: pkt.id },
+                        });
+                      }}
+                      style={[styles.pocketActionBtnGhost, { borderColor: pkt.color }]}
+                    >
+                      <Ionicons name="paper-plane-outline" size={12} color={pkt.color} />
+                      <Text style={[styles.pocketActionBtnGhostText, { color: pkt.color }]}>Offer</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
         </View>
 
         {/* Filter Tabs Bar (All, Sent, Received) */}
@@ -294,6 +374,102 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#8A6D1C',
     flex: 1,
+  },
+  pocketsSection: {
+    marginBottom: 20,
+  },
+  pocketsHeaderRow: {
+    marginBottom: 12,
+  },
+  pocketsTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  pocketsSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  pocketsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  pocketCard: {
+    width: '48%',
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    justifyContent: 'space-between',
+    minHeight: 145,
+  },
+  pocketCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  pocketSymbol: {
+    fontSize: 22,
+  },
+  pocketBalanceBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  pocketBalanceText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  pocketCardTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  pocketCardHindi: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  pocketCardDesc: {
+    fontSize: 10,
+    color: '#6B7280',
+    lineHeight: 14,
+    marginBottom: 8,
+  },
+  pocketActionsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 4,
+  },
+  pocketActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4,
+  },
+  pocketActionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  pocketActionBtnGhost: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
+    gap: 4,
+  },
+  pocketActionBtnGhostText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   filterRow: {
     flexDirection: 'row',

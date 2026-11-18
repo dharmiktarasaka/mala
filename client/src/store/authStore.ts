@@ -11,6 +11,7 @@ interface AuthState {
   setAuth: (user: User, token: string, refreshToken: string) => void;
   updateUser: (partial: Partial<User>) => void;
   updateWalletBalance: (balance: number) => void;
+  updatePockets: (pockets: Record<string, number>) => void;
   logout: () => void;
   hydrate: () => void;
 }
@@ -115,6 +116,25 @@ export const useAuthStore = create<AuthState>((set) => ({
   updateWalletBalance: (balance) =>
     set((state) => {
       const updatedUser = state.user ? { ...state.user, walletBalance: balance } : null;
+      if (typeof window !== 'undefined' && updatedUser && state.token) {
+        const payload = JSON.stringify({
+          user: updatedUser,
+          token: state.token,
+          refreshToken: state.refreshToken,
+        });
+        try {
+          window.sessionStorage?.setItem(STORAGE_KEY, payload);
+        } catch {}
+        try {
+          window.localStorage?.setItem(STORAGE_KEY, payload);
+        } catch {}
+      }
+      return { user: updatedUser };
+    }),
+
+  updatePockets: (pockets) =>
+    set((state) => {
+      const updatedUser = state.user ? { ...state.user, pockets } : null;
       if (typeof window !== 'undefined' && updatedUser && state.token) {
         const payload = JSON.stringify({
           user: updatedUser,

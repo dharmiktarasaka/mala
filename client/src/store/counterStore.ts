@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import * as Haptics from 'expo-haptics';
+import { MalaPocketId } from '../constants/malaTypes';
 
 interface CounterState {
   sessionCount: number;
@@ -10,11 +11,13 @@ interface CounterState {
   soundEnabled: boolean;
   vibrationEnabled: boolean;
   targetCompletedAnimation: boolean;
+  selectedMalaType: MalaPocketId;
 
   increment: () => void;
   decrement: () => void;
   resetSession: () => void;
   setTarget: (target: number) => void;
+  setSelectedMalaType: (type: MalaPocketId) => void;
   setStatsFromServer: (stats: {
     dailyCount: number;
     lifetimeCount: number;
@@ -34,6 +37,7 @@ export const useCounterStore = create<CounterState>((set, get) => ({
   soundEnabled: true,
   vibrationEnabled: true,
   targetCompletedAnimation: false,
+  selectedMalaType: 'daily_sankalp',
 
   increment: () => {
     const { sessionCount, targetCount, dailyTotal, lifetimeTotal, vibrationEnabled } = get();
@@ -80,6 +84,8 @@ export const useCounterStore = create<CounterState>((set, get) => ({
   resetSession: () => set({ sessionCount: 0, targetCompletedAnimation: false }),
 
   setTarget: (target) => set({ targetCount: target }),
+
+  setSelectedMalaType: (type) => set({ selectedMalaType: type }),
 
   setStatsFromServer: (stats) =>
     set({

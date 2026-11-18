@@ -1,4 +1,4 @@
-import { IsBoolean, IsInt, IsOptional, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RecordSessionDto {
@@ -30,5 +30,15 @@ export class RecordSessionDto {
   @IsBoolean()
   @IsOptional()
   vibrationEnabled?: boolean;
+
+  @ApiProperty({
+    required: false,
+    enum: ['divya_mahamala', 'jackpot', 'ram_ram', 'extra', 'bonus', 'daily_sankalp'],
+    default: 'daily_sankalp',
+    description: 'Category / pocket for the Mala counted',
+  })
+  @IsString()
+  @IsOptional()
+  malaType?: string;
 }
 

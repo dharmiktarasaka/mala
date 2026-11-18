@@ -17,6 +17,7 @@ export interface TransferRequest {
   senderUserId: string;
   recipientIdentifier: string; // username, userId, or phone
   amount: number;
+  pocket?: string; // pocket to debit
   idempotencyKey?: string;
   referenceNote?: string;
 }
@@ -37,7 +38,7 @@ export class LedgerService {
    * Execute an atomic banking-style Mala transfer with double-entry ledger bookkeeping.
    */
   async executeTransfer(dto: TransferRequest) {
-    const { senderUserId, recipientIdentifier, amount, idempotencyKey, referenceNote } = dto;
+    const { senderUserId, recipientIdentifier, amount, pocket, idempotencyKey, referenceNote } = dto;
 
     if (!amount || amount <= 0 || !Number.isInteger(amount)) {
       throw new BadRequestException('Transfer amount must be a positive whole number of Mala');
@@ -75,33 +76,31 @@ export class LedgerService {
       },
     });
 
-    if (!recipientUser) {
-      throw new NotFoundException(`Recipient devotee '${recipientIdentifier}' not found. Please verify the 6-digit Devotee Number or username.`);
+    if (recipientUser) {
+      if (recipientUser.id === senderUserId || recipientUser.devoteeId === senderUserId) {
+        throw new BadRequestException('Cannot transfer Mala to your own account');
+      }
+
+      if (recipientUser.status !== 'ACTIVE') {
+        throw new BadRequestException('Recipient account is currently suspended or inactive');
+      }
+
+      // Check for Block relationships
+      const isBlocked = await this.prisma.blockedUser.findFirst({
+        where: {
+          OR: [
+            { blockerId: senderUserId, blockedId: recipientUser.id },
+            { blockerId: recipientUser.id, blockedId: senderUserId },
+          ],
+        },
+      });
+
+      if (isBlocked) {
+        throw new BadRequestException('Unable to transfer Mala to this user');
+      }
     }
 
-    if (recipientUser.id === senderUserId || recipientUser.devoteeId === senderUserId) {
-      throw new BadRequestException('Cannot transfer Mala to your own account');
-    }
-
-    if (recipientUser.status !== 'ACTIVE') {
-      throw new BadRequestException('Recipient account is currently suspended or inactive');
-    }
-
-    // 3. Check for Block relationships
-    const isBlocked = await this.prisma.blockedUser.findFirst({
-      where: {
-        OR: [
-          { blockerId: senderUserId, blockedId: recipientUser.id },
-          { blockerId: recipientUser.id, blockedId: senderUserId },
-        ],
-      },
-    });
-
-    if (isBlocked) {
-      throw new BadRequestException('Unable to transfer Mala to this user');
-    }
-
-    // 4. Atomic Double-Entry Database Transaction with Concurrency & Isolation
+    // 3. Atomic Double-Entry Database Transaction with Concurrency & Isolation
     const completedTransaction = await this.prisma.$transaction(
       async (tx) => {
         // Fetch sender wallet with pessimistic locking (raw query or isolated check)
@@ -139,6 +138,96 @@ export class LedgerService {
           });
         }
 
+        const senderNewBalance = senderWallet.balance - amount;
+
+        // CASE A: Devotee recipient not registered in DB (Universal Offering)
+        if (!recipientUser) {
+          let escrowAccount = await tx.ledgerAccount.findFirst({
+            where: { accountType: LedgerAccountType.SYSTEM_VAULT },
+          });
+          if (!escrowAccount) {
+            escrowAccount = await tx.ledgerAccount.create({
+              data: {
+                walletId: 'system-escrow-wallet',
+                accountType: LedgerAccountType.SYSTEM_VAULT,
+                balance: 0,
+              },
+            });
+          }
+
+          const transactionRecord = await tx.ledgerTransaction.create({
+            data: {
+              transactionType: TransactionType.TRANSFER,
+              status: TransactionStatus.COMPLETED,
+              idempotencyKey: idempotencyKey || undefined,
+              sourceWalletId: senderWallet.id,
+              targetWalletId: null,
+              amount,
+              referenceNote: referenceNote || 'Universal Spiritual Offering',
+              metadata: JSON.stringify({
+                isExternal: true,
+                recipientIdentifier: cleanRecipientId,
+                pocket: pocket || 'all',
+              }),
+            },
+          });
+
+          // Double-entry validation:
+          // Entry 1: DEBIT Sender Account
+          const debitEntry = await tx.ledgerEntry.create({
+            data: {
+              transactionId: transactionRecord.id,
+              ledgerAccountId: senderAccount.id,
+              entryType: EntryType.DEBIT,
+              amount,
+              balanceAfter: senderNewBalance,
+              description: `Offering to ${cleanRecipientId}`,
+            },
+          });
+
+          // Entry 2: CREDIT System Escrow Reserve
+          const creditEntry = await tx.ledgerEntry.create({
+            data: {
+              transactionId: transactionRecord.id,
+              ledgerAccountId: escrowAccount.id,
+              entryType: EntryType.CREDIT,
+              amount,
+              balanceAfter: (escrowAccount.balance || 0) + amount,
+              description: `Universal offering from @${senderWallet.user?.username || senderUserId}`,
+            },
+          });
+
+          if (debitEntry.amount !== creditEntry.amount || debitEntry.amount !== amount) {
+            throw new InternalServerErrorException('Double-entry balancing constraint failed');
+          }
+
+          // Update sender wallet and ledger account
+          await (tx.wallet.update as any)({
+            where: { id: senderWallet.id },
+            data: {
+              balance: senderNewBalance,
+              totalSent: { increment: amount },
+              pocketDebit: {
+                pocket,
+                amount,
+              },
+            } as any,
+          });
+
+          await tx.ledgerAccount.update({
+            where: { id: senderAccount.id },
+            data: { balance: senderNewBalance },
+          });
+
+          // Return enriched transaction for receipt formatting
+          return {
+            ...transactionRecord,
+            sourceWallet: senderWallet,
+            targetWallet: null,
+          };
+        }
+
+        // CASE B: Devotee recipient IS registered in DB
         // Fetch recipient wallet
         const recipientWallet = await tx.wallet.findUnique({
           where: { userId: recipientUser.id },
@@ -177,11 +266,13 @@ export class LedgerService {
             targetWalletId: recipientWallet.id,
             amount,
             referenceNote: referenceNote || 'Spiritual Mala Offering',
+            metadata: JSON.stringify({
+              pocket: pocket || 'all',
+            }),
           },
         });
 
         // Compute post-transaction balances
-        const senderNewBalance = senderWallet.balance - amount;
         const recipientNewBalance = recipientWallet.balance + amount;
 
         // Double-entry validation:
@@ -215,12 +306,16 @@ export class LedgerService {
         }
 
         // Update sender wallet and ledger account
-        await tx.wallet.update({
+        await (tx.wallet.update as any)({
           where: { id: senderWallet.id },
           data: {
             balance: senderNewBalance,
             totalSent: { increment: amount },
-          },
+            pocketDebit: {
+              pocket,
+              amount,
+            },
+          } as any,
         });
 
         await tx.ledgerAccount.update({
@@ -228,13 +323,17 @@ export class LedgerService {
           data: { balance: senderNewBalance },
         });
 
-        // Update recipient wallet and ledger account
-        await tx.wallet.update({
+        // Update recipient wallet and ledger account (credit matching pocket or bonus)
+        await (tx.wallet.update as any)({
           where: { id: recipientWallet.id },
           data: {
             balance: recipientNewBalance,
             totalReceived: { increment: amount },
-          },
+            pocketCredit: {
+              pocket: pocket || 'bonus',
+              amount,
+            },
+          } as any,
         });
 
         await tx.ledgerAccount.update({
@@ -283,9 +382,7 @@ export class LedgerService {
 
         return finalizedTx;
       },
-      {
-        timeout: 10000,
-      },
+      { timeout: 10000 },
     );
 
     return this.formatReceipt(completedTransaction);
@@ -442,11 +539,21 @@ export class LedgerService {
   }
 
   private formatReceipt(tx: any) {
+    let meta: any = {};
+    try {
+      if (typeof tx.metadata === 'string') meta = JSON.parse(tx.metadata);
+      else if (tx.metadata) meta = tx.metadata;
+    } catch {}
+
+    const isExternal = Boolean(meta.isExternal || !tx.targetWalletId);
+    const extRecipient = meta.recipientIdentifier || 'Devotee';
+
     return {
       receiptId: tx.id,
       status: tx.status,
       amount: tx.amount,
       note: tx.referenceNote,
+      pocket: meta.pocket,
       createdAt: tx.createdAt,
       sender: {
         userId: tx.sourceWallet?.user?.id,
@@ -454,14 +561,23 @@ export class LedgerService {
         displayName: tx.sourceWallet?.user?.profile?.displayName,
         avatarUrl: tx.sourceWallet?.user?.profile?.avatarUrl,
         remainingBalance: tx.sourceWallet?.balance,
+        pockets: tx.sourceWallet?.pockets,
       },
-      recipient: {
-        userId: tx.targetWallet?.user?.id,
-        username: tx.targetWallet?.user?.username,
-        displayName: tx.targetWallet?.user?.profile?.displayName,
-        avatarUrl: tx.targetWallet?.user?.profile?.avatarUrl,
-        newBalance: tx.targetWallet?.balance,
-      },
+      recipient: isExternal
+        ? {
+            userId: `ext-${extRecipient}`,
+            username: extRecipient,
+            displayName: extRecipient,
+            isExternal: true,
+          }
+        : {
+            userId: tx.targetWallet?.user?.id,
+            username: tx.targetWallet?.user?.username,
+            displayName: tx.targetWallet?.user?.profile?.displayName,
+            avatarUrl: tx.targetWallet?.user?.profile?.avatarUrl,
+            newBalance: tx.targetWallet?.balance,
+            isExternal: false,
+          },
     };
   }
 }

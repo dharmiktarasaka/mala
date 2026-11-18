@@ -124,20 +124,30 @@ export class CounterService {
 
       // 4. Credit earned Mala to devotee wallet (1 Mala per 108 chants completed)
       const earnedMala = Math.floor(dto.beadCount / 108) || (dto.completedTarget ? 1 : 0);
+      const chosenType = dto.malaType || 'daily_sankalp';
+      let walletResult: any = null;
       if (earnedMala > 0) {
         try {
-          await tx.wallet.update({
+          walletResult = await (tx.wallet.update as any)({
             where: { userId },
             data: {
               balance: { increment: earnedMala },
               totalEarned: { increment: earnedMala },
-            },
+              pocketCredit: {
+                pocket: chosenType,
+                amount: earnedMala,
+              },
+            } as any,
           });
         } catch {}
       }
 
       return {
         session,
+        earnedMala,
+        pocketCredited: chosenType,
+        walletBalance: walletResult?.balance,
+        pockets: walletResult?.pockets,
         statistics: {
           dailyCount: updatedStats.currentDailyCount,
           lifetimeCount: updatedStats.lifetimeCount,

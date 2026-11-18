@@ -11,7 +11,7 @@ import {
   Modal,
   Platform,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../src/theme/colors';
 import { Header } from '../../src/components/Header';
@@ -19,17 +19,28 @@ import { apiClient } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 import { useThemeStore } from '../../src/store/themeStore';
 import { TransferReceipt } from '../../src/types';
+import { MALA_POCKETS, MalaPocketId } from '../../src/constants/malaTypes';
 
 export default function SendMalaScreen() {
-  const { user, updateWalletBalance } = useAuthStore();
+  const params = useLocalSearchParams<{ pocket?: string; recipient?: string }>();
+  const { user, updateWalletBalance, updatePockets } = useAuthStore();
   const { mode, t } = useThemeStore();
   const theme = Colors[mode];
 
-  const [recipient, setRecipient] = useState('');
+  const [selectedPocket, setSelectedPocket] = useState<string>(params.pocket || 'all');
+  const [recipient, setRecipient] = useState(params.recipient || '');
   const [amount, setAmount] = useState('10');
   const [note, setNote] = useState('Sacred Sadhana Blessing 🙏');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Active pocket config if a specific pocket is selected
+  const activePocketConfig = MALA_POCKETS.find((p) => p.id === selectedPocket);
+  const totalBalance = user?.walletBalance ?? 108;
+  const pocketBalance = activePocketConfig
+    ? ((user?.pockets as any)?.[activePocketConfig.id] ?? 0)
+    : totalBalance;
+  const currentAvailable = selectedPocket === 'all' ? totalBalance : pocketBalance;
 
   // Verification & Confirmation state
   const [previewData, setPreviewData] = useState<any>(null);
@@ -44,6 +55,9 @@ export default function SendMalaScreen() {
       if (res.data?.balance !== undefined) {
         updateWalletBalance(res.data.balance);
       }
+      if (res.data?.pockets) {
+        updatePockets(res.data.pockets);
+      }
     } catch {}
   };
 
@@ -57,11 +71,19 @@ export default function SendMalaScreen() {
     const parsedAmount = parseInt(amount, 10);
 
     if (!cleanRecipient) {
-      setErrorMessage('Please enter recipient 6-digit Devotee Number or username');
+      setErrorMessage('Please enter recipient Devotee Number, username, or devotee name');
       return;
     }
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       setErrorMessage('Please enter a valid whole number of Mala');
+      return;
+    }
+
+    if (parsedAmount > currentAvailable) {
+      const label = activePocketConfig ? `${activePocketConfig.title} Pocket` : 'Total Balance';
+      const msg = `Insufficient Balance in ${label}: You have ${currentAvailable} Mala available, but tried to send ${parsedAmount} Mala.`;
+      setErrorMessage(msg);
+      Alert.alert('Insufficient Balance', msg);
       return;
     }
 
@@ -70,6 +92,7 @@ export default function SendMalaScreen() {
       const res: any = await apiClient.post('/wallet/verify-recipient', {
         identifier: cleanRecipient,
         amount: parsedAmount,
+        pocket: selectedPocket === 'all' ? undefined : selectedPocket,
       });
 
       if (!res.data.canAfford) {
@@ -84,7 +107,7 @@ export default function SendMalaScreen() {
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || 'Devotee verification failed';
       setErrorMessage(msg);
-      Alert.alert('Verification Failed', msg);
+      Alert.alert('Verification Notice', msg);
     } finally {
       setLoading(false);
     }
@@ -97,21 +120,24 @@ export default function SendMalaScreen() {
 
     try {
       const cleanRecipient = recipient.replace(/^[#@]/, '').trim();
-      // Idempotency key to guarantee banking safety and prevent accidental double-submits
       const idempotencyKey = `tx-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
       const res: any = await apiClient.post('/wallet/transfer', {
         recipientIdentifier: cleanRecipient,
         amount: parseInt(amount, 10),
         note: note.trim() || undefined,
+        pocket: selectedPocket === 'all' ? undefined : selectedPocket,
         idempotencyKey,
       });
 
       const receiptData: TransferReceipt = res.data;
       setReceipt(receiptData);
 
-      // Update local wallet balance state
+      // Update local wallet balance and pockets state
       updateWalletBalance(receiptData.sender.remainingBalance);
+      if (receiptData.sender.pockets) {
+        updatePockets(receiptData.sender.pockets);
+      }
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Transfer failed';
       setErrorMessage(msg);
@@ -139,14 +165,19 @@ export default function SendMalaScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        {/* Available Balance Reminder */}
-        <View style={[styles.balanceCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.balanceLabel, { color: theme.textSecondary }]}>
-            Your Transferable Mala Balance
-          </Text>
-          <Text style={[styles.balanceAmount, { color: Colors.primary }]}>
-            {user?.walletBalance ?? 108} <Text style={{ fontSize: 14 }}>Mala</Text>
-          </Text>
+        {/* Available Balance Reminder Card with Pocket indicator */}
+        <View style={[styles.balanceCard, { backgroundColor: activePocketConfig ? activePocketConfig.bgLight : theme.surface, borderColor: activePocketConfig ? activePocketConfig.borderColor : theme.border }]}>
+          <View style={styles.balanceCardRow}>
+            <View>
+              <Text style={[styles.balanceLabel, { color: theme.textSecondary }]}>
+                {activePocketConfig ? `Transferable from ${activePocketConfig.title}` : 'Your Total Transferable Mala Balance'}
+              </Text>
+              <Text style={[styles.balanceAmount, { color: activePocketConfig ? activePocketConfig.color : Colors.primary }]}>
+                {currentAvailable} <Text style={{ fontSize: 14 }}>Mala</Text>
+              </Text>
+            </View>
+            <Text style={{ fontSize: 32 }}>{activePocketConfig ? activePocketConfig.symbol : '🕉️'}</Text>
+          </View>
         </View>
 
         {/* Real-time Inline Error Banner */}
@@ -159,21 +190,80 @@ export default function SendMalaScreen() {
 
         {/* Input Form */}
         <View style={styles.form}>
+          {/* Pocket Selector Section */}
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: theme.textPrimary }]}>
-              Recipient Devotee (Devotee Number or Username) *
+              Offer From Sacred Mala Pocket
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pocketsChipsRow}>
+              {/* All / Auto option */}
+              <TouchableOpacity
+                onPress={() => setSelectedPocket('all')}
+                style={[
+                  styles.pocketSelectChip,
+                  selectedPocket === 'all'
+                    ? { backgroundColor: Colors.primary, borderColor: Colors.primary }
+                    : { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}
+              >
+                <Text style={{ fontSize: 14 }}>✨</Text>
+                <Text
+                  style={[
+                    styles.pocketSelectChipText,
+                    { color: selectedPocket === 'all' ? '#FFFFFF' : theme.textPrimary },
+                  ]}
+                >
+                  All ({totalBalance})
+                </Text>
+              </TouchableOpacity>
+
+              {MALA_POCKETS.map((pkt) => {
+                const isSel = selectedPocket === pkt.id;
+                const cnt = (user?.pockets as any)?.[pkt.id] ?? 0;
+                return (
+                  <TouchableOpacity
+                    key={pkt.id}
+                    onPress={() => setSelectedPocket(pkt.id)}
+                    style={[
+                      styles.pocketSelectChip,
+                      isSel
+                        ? { backgroundColor: pkt.color, borderColor: pkt.color }
+                        : { backgroundColor: theme.surface, borderColor: theme.border },
+                    ]}
+                  >
+                    <Text style={{ fontSize: 14 }}>{pkt.symbol}</Text>
+                    <Text
+                      style={[
+                        styles.pocketSelectChipText,
+                        { color: isSel ? '#FFFFFF' : theme.textPrimary },
+                      ]}
+                    >
+                      {pkt.title} ({cnt})
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: theme.textPrimary }]}>
+              Recipient Devotee (Devotee Number, Username or Devotee Name) *
             </Text>
             <View style={[styles.inputWrapper, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <Ionicons name="person-outline" size={18} color="#9CA3AF" style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { color: theme.textPrimary }]}
-                placeholder="Enter 6-digit Devotee Number (e.g. 108429) or username"
+                placeholder="Enter Devotee Number (e.g. 108429), username or name"
                 placeholderTextColor={theme.textMuted}
                 value={recipient}
                 onChangeText={setRecipient}
                 autoCapitalize="none"
               />
             </View>
+            <Text style={styles.helperText}>
+              🌟 You can send to any registered devotee or offer to any spiritual devotee name directly.
+            </Text>
           </View>
 
           <View style={styles.inputGroup}>
@@ -181,7 +271,7 @@ export default function SendMalaScreen() {
               Number of Mala to Transfer *
             </Text>
             <View style={[styles.inputWrapper, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-              <Text style={styles.malaSymbol}>🕉️</Text>
+              <Text style={styles.malaSymbol}>{activePocketConfig ? activePocketConfig.symbol : '🕉️'}</Text>
               <TextInput
                 style={[styles.input, { color: theme.textPrimary, fontWeight: '700' }]}
                 keyboardType="number-pad"
@@ -199,7 +289,7 @@ export default function SendMalaScreen() {
                   style={[
                     styles.amountChip,
                     amount === String(q)
-                      ? { backgroundColor: Colors.primary }
+                      ? { backgroundColor: activePocketConfig ? activePocketConfig.color : Colors.primary }
                       : { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
                   ]}
                 >
@@ -235,7 +325,11 @@ export default function SendMalaScreen() {
           <TouchableOpacity
             onPress={handleVerifyRecipient}
             disabled={loading}
-            style={[styles.verifyBtn, loading && { opacity: 0.7 }]}
+            style={[
+              styles.verifyBtn,
+              activePocketConfig && { backgroundColor: activePocketConfig.color },
+              loading && { opacity: 0.7 },
+            ]}
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" />
@@ -249,7 +343,7 @@ export default function SendMalaScreen() {
         </View>
       </ScrollView>
 
-      {/* Confirmation Dialog (Section 6 Requirement) */}
+      {/* Confirmation Dialog */}
       <Modal visible={showConfirmModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
@@ -263,23 +357,40 @@ export default function SendMalaScreen() {
             {previewData && (
               <View style={[styles.previewCard, { backgroundColor: theme.surfaceSubtle, borderColor: theme.border }]}>
                 <View style={styles.recipientRow}>
-                  <View style={styles.recipientAvatar}>
+                  <View style={[styles.recipientAvatar, previewData.recipient.isExternal && { backgroundColor: '#F59E0B' }]}>
                     <Text style={styles.recipientAvatarText}>
-                      {previewData.recipient.displayName?.[0]?.toUpperCase() || '🕉️'}
+                      {previewData.recipient.isExternal ? '🙏' : (previewData.recipient.displayName?.[0]?.toUpperCase() || '🕉️')}
                     </Text>
                   </View>
-                  <View>
+                  <View style={{ flex: 1 }}>
                     <Text style={[styles.recipientName, { color: theme.textPrimary }]}>
                       {previewData.recipient.displayName}
                     </Text>
-                    <Text style={[styles.recipientUsername, { color: Colors.primary }]}>
-                      @{previewData.recipient.username}
-                      {previewData.recipient.devoteeId && ` • ID: #${previewData.recipient.devoteeId}`}
-                    </Text>
+                    {previewData.recipient.isExternal ? (
+                      <Text style={[styles.recipientUsername, { color: '#D97706' }]}>
+                        🌟 Universal Devotee Offering (Recorded in History)
+                      </Text>
+                    ) : (
+                      <Text style={[styles.recipientUsername, { color: Colors.primary }]}>
+                        @{previewData.recipient.username}
+                        {previewData.recipient.devoteeId && ` • ID: #${previewData.recipient.devoteeId}`}
+                      </Text>
+                    )}
                   </View>
                 </View>
 
                 <View style={styles.divider} />
+
+                {activePocketConfig && (
+                  <View style={styles.previewDetailRow}>
+                    <Text style={[styles.previewDetailLabel, { color: theme.textSecondary }]}>
+                      Source Pocket:
+                    </Text>
+                    <Text style={[styles.previewDetailVal, { color: activePocketConfig.color }]}>
+                      {activePocketConfig.symbol} {activePocketConfig.title}
+                    </Text>
+                  </View>
+                )}
 
                 <View style={styles.previewDetailRow}>
                   <Text style={[styles.previewDetailLabel, { color: theme.textSecondary }]}>
@@ -292,10 +403,10 @@ export default function SendMalaScreen() {
 
                 <View style={styles.previewDetailRow}>
                   <Text style={[styles.previewDetailLabel, { color: theme.textSecondary }]}>
-                    Current Balance:
+                    Current Available:
                   </Text>
                   <Text style={[styles.previewDetailVal, { color: theme.textPrimary }]}>
-                    {previewData.currentBalance} Mala
+                    {currentAvailable} Mala
                   </Text>
                 </View>
 
@@ -304,7 +415,7 @@ export default function SendMalaScreen() {
                     Balance After Transfer:
                   </Text>
                   <Text style={[styles.previewDetailVal, { color: Colors.accentGoldDark }]}>
-                    {previewData.remainingBalance} Mala
+                    {Math.max(0, currentAvailable - previewData.transferAmount)} Mala
                   </Text>
                 </View>
               </View>
@@ -320,7 +431,11 @@ export default function SendMalaScreen() {
 
               <TouchableOpacity
                 onPress={handleExecuteTransfer}
-                style={[styles.modalBtn, styles.confirmBtn]}
+                style={[
+                  styles.modalBtn,
+                  styles.confirmBtn,
+                  activePocketConfig && { backgroundColor: activePocketConfig.color },
+                ]}
               >
                 <Text style={styles.confirmBtnText}>Confirm Transfer</Text>
               </TouchableOpacity>
@@ -341,7 +456,9 @@ export default function SendMalaScreen() {
               {t('transferSuccess')}
             </Text>
             <Text style={[styles.modalSub, { color: theme.textSecondary, textAlign: 'center' }]}>
-              Double-entry ledger transaction completed atomically.
+              {receipt?.recipient?.isExternal
+                ? 'Spiritual offering recorded permanently in your ledger history.'
+                : 'Double-entry ledger transaction completed atomically.'}
             </Text>
 
             {receipt && (
@@ -356,9 +473,19 @@ export default function SendMalaScreen() {
                     {receipt.amount} Mala
                   </Text>
                 </View>
+                {receipt.pocket && (
+                  <View style={styles.receiptLine}>
+                    <Text style={styles.receiptKey}>Pocket:</Text>
+                    <Text style={styles.receiptValue}>{receipt.pocket}</Text>
+                  </View>
+                )}
                 <View style={styles.receiptLine}>
                   <Text style={styles.receiptKey}>Recipient:</Text>
-                  <Text style={styles.receiptValue}>@{receipt.recipient.username}</Text>
+                  <Text style={styles.receiptValue}>
+                    {receipt.recipient?.isExternal
+                      ? `${receipt.recipient.displayName || receipt.recipient.username} (Universal Offering)`
+                      : `@${receipt.recipient.username}`}
+                  </Text>
                 </View>
                 <View style={styles.receiptLine}>
                   <Text style={styles.receiptKey}>Your New Balance:</Text>
@@ -413,7 +540,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: 20,
+  },
+  balanceCardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    width: '100%',
   },
   balanceLabel: {
     fontSize: 12,
@@ -424,6 +556,29 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
     marginTop: 4,
+  },
+  pocketsChipsRow: {
+    gap: 8,
+    paddingVertical: 4,
+  },
+  pocketSelectChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 6,
+  },
+  pocketSelectChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  helperText: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 2,
+    lineHeight: 15,
   },
   errorBanner: {
     flexDirection: 'row',
