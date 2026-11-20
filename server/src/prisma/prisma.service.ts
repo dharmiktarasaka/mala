@@ -349,11 +349,19 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           w = {
             id: `w-${u.id}`,
             userId: u.id,
-            balance: 108,
+            balance: 0,
             totalReceived: 0,
             totalSent: 0,
-            totalEarned: 108,
+            totalEarned: 0,
             status: 'ACTIVE',
+            pockets: {
+              divya_mahamala: 0,
+              jackpot: 0,
+              ram_ram: 0,
+              extra: 0,
+              bonus: 0,
+              daily_sankalp: 0,
+            },
             createdAt: new Date(),
           };
           self.memoryWallets.set(w.id, w);
@@ -553,21 +561,21 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       if (!wallet) return null;
       if (!wallet.pockets || typeof wallet.pockets !== 'object') {
         wallet.pockets = {
-          divya_mahamala: 18,
-          jackpot: 11,
-          ram_ram: 28,
-          extra: 10,
-          bonus: 11,
-          daily_sankalp: 30,
+          divya_mahamala: 0,
+          jackpot: 0,
+          ram_ram: 0,
+          extra: 0,
+          bonus: 0,
+          daily_sankalp: 0,
         };
       } else {
         wallet.pockets = {
-          divya_mahamala: Number(wallet.pockets.divya_mahamala ?? 18),
-          jackpot: Number(wallet.pockets.jackpot ?? 11),
-          ram_ram: Number(wallet.pockets.ram_ram ?? 28),
-          extra: Number(wallet.pockets.extra ?? 10),
-          bonus: Number(wallet.pockets.bonus ?? 11),
-          daily_sankalp: Number(wallet.pockets.daily_sankalp ?? 30),
+          divya_mahamala: Number(wallet.pockets.divya_mahamala ?? 0),
+          jackpot: Number(wallet.pockets.jackpot ?? 0),
+          ram_ram: Number(wallet.pockets.ram_ram ?? 0),
+          extra: Number(wallet.pockets.extra ?? 0),
+          bonus: Number(wallet.pockets.bonus ?? 0),
+          daily_sankalp: Number(wallet.pockets.daily_sankalp ?? 0),
         };
       }
       return wallet.pockets;
@@ -596,18 +604,18 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           w = {
             id: `w-${where.userId}`,
             userId: where.userId,
-            balance: 108,
+            balance: 0,
             totalReceived: 0,
             totalSent: 0,
-            totalEarned: 108,
+            totalEarned: 0,
             status: 'ACTIVE',
             pockets: {
-              divya_mahamala: 18,
-              jackpot: 11,
-              ram_ram: 28,
-              extra: 10,
-              bonus: 11,
-              daily_sankalp: 30,
+              divya_mahamala: 0,
+              jackpot: 0,
+              ram_ram: 0,
+              extra: 0,
+              bonus: 0,
+              daily_sankalp: 0,
             },
             createdAt: new Date(),
           };
@@ -618,16 +626,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         if (!w) return null;
 
         ensurePockets(w);
-
-        // Auto-seed starter 108 Mala if uninitialized
-        if (w.balance === 0 && (!w.totalEarned || w.totalEarned === 0) && (!w.totalSent || w.totalSent === 0)) {
-          w.balance = 108;
-          w.totalEarned = 108;
-          ensurePockets(w);
-          self.memoryWallets.set(w.id, w);
-          self.saveToDisk();
-          await self.saveToMongo('wallets', w.id, w);
-        }
 
         const copy = { ...w };
         if (include?.user) {
@@ -643,16 +641,16 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           id: `w-${Date.now()}`,
           totalReceived: 0,
           totalSent: 0,
-          totalEarned: 108,
+          totalEarned: 0,
           status: 'ACTIVE',
-          balance: 108,
+          balance: 0,
           pockets: {
-            divya_mahamala: 18,
-            jackpot: 11,
-            ram_ram: 28,
-            extra: 10,
-            bonus: 11,
-            daily_sankalp: 30,
+            divya_mahamala: 0,
+            jackpot: 0,
+            ram_ram: 0,
+            extra: 0,
+            bonus: 0,
+            daily_sankalp: 0,
           },
           ...data,
         };

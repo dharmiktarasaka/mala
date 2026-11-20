@@ -88,8 +88,8 @@ export class AuthService {
       const wallet = await tx.wallet.create({
         data: {
           userId: user.id,
-          balance: 108,
-          totalEarned: 108,
+          balance: 0,
+          totalEarned: 0,
           totalReceived: 0,
           totalSent: 0,
         },
@@ -101,7 +101,7 @@ export class AuthService {
           walletId: wallet.id,
           accountType: 'USER_AVAILABLE',
           currency: 'MALA',
-          balance: 108,
+          balance: 0,
         },
       });
 
@@ -110,8 +110,8 @@ export class AuthService {
           userId: user.id,
           currentDailyCount: 0,
           lifetimeCount: 0,
-          currentStreakDays: 1,
-          longestStreakDays: 1,
+          currentStreakDays: 0,
+          longestStreakDays: 0,
         },
       });
 
@@ -138,7 +138,7 @@ export class AuthService {
         phone: newUser.phone,
         role: newUser.role,
         displayName: dto.displayName,
-        walletBalance: 108,
+        walletBalance: 0,
       },
       ...tokens,
     };
@@ -178,14 +178,7 @@ export class AuthService {
     const tokens = await this.generateTokens(user.id, user.username, user.role);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
 
-    let currentBalance = user.wallet?.balance ?? 108;
-    if (user.wallet && user.wallet.balance === 0 && (!user.wallet.totalEarned) && (!user.wallet.totalSent)) {
-      currentBalance = 108;
-      await this.prisma.wallet.update({
-        where: { id: user.wallet.id },
-        data: { balance: 108, totalEarned: 108 },
-      });
-    }
+    const currentBalance = user.wallet?.balance ?? 0;
 
     return {
       user: {

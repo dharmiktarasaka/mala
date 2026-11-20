@@ -119,7 +119,7 @@ export default function AdminScreen() {
           <View style={[styles.metricCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Ionicons name="people" size={20} color={Colors.primary} />
             <Text style={[styles.metricNumber, { color: theme.textPrimary }]}>
-              {analytics?.users?.total ?? 3}
+              {analytics?.users?.total ?? 0}
             </Text>
             <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>Total Devotees</Text>
           </View>
@@ -127,7 +127,7 @@ export default function AdminScreen() {
           <View style={[styles.metricCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Ionicons name="flower" size={20} color={Colors.accentGoldDark} />
             <Text style={[styles.metricNumber, { color: theme.textPrimary }]}>
-              {analytics?.spiritualStats?.totalMalaCountedLifetime?.toLocaleString() ?? 10850}
+              {analytics?.spiritualStats?.totalMalaCountedLifetime?.toLocaleString() ?? 0}
             </Text>
             <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>Mala Counted</Text>
           </View>
@@ -135,7 +135,7 @@ export default function AdminScreen() {
           <View style={[styles.metricCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Ionicons name="swap-horizontal" size={20} color={Colors.success} />
             <Text style={[styles.metricNumber, { color: theme.textPrimary }]}>
-              {analytics?.ledgerStats?.totalMalaTransferred?.toLocaleString() ?? 250}
+              {analytics?.ledgerStats?.totalMalaTransferred?.toLocaleString() ?? 0}
             </Text>
             <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>Mala Transferred</Text>
           </View>

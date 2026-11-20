@@ -57,12 +57,12 @@ export const WalletBalanceCard: React.FC<WalletCardProps> = ({
       <View style={styles.subStatsRow}>
         <View style={styles.subStatItem}>
           <Ionicons name="arrow-down-circle" size={16} color={Colors.successLight} />
-          <Text style={styles.subStatLabel}>Recv: +{totalReceived}</Text>
+          <Text style={styles.subStatLabel}>Recv: {totalReceived}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.subStatItem}>
           <Ionicons name="arrow-up-circle" size={16} color="#FFCDD2" />
-          <Text style={styles.subStatLabel}>Sent: -{totalSent}</Text>
+          <Text style={styles.subStatLabel}>Sent: {totalSent}</Text>
         </View>
       </View>
 

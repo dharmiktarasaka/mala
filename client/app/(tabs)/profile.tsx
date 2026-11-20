@@ -185,7 +185,7 @@ export default function ProfileScreen() {
 
             <View style={styles.statCol}>
               <Text style={[styles.statValue, { color: Colors.accentGoldDark }]}>
-                {profileData?.friendsCount ?? 12}
+                {profileData?.friendsCount ?? 0}
               </Text>
               <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
                 Friends
@@ -213,7 +213,7 @@ export default function ProfileScreen() {
 
             <View style={styles.balancePill}>
               <Text style={styles.balancePillNumber}>
-                {profileData?.wallet?.balance ?? user?.walletBalance ?? 108}
+                {profileData?.wallet?.balance ?? user?.walletBalance ?? 0}
               </Text>
               <Text style={styles.balancePillUnit}>Mala</Text>
             </View>
@@ -229,7 +229,7 @@ export default function ProfileScreen() {
                 </Text>
               </View>
               <Text style={[styles.walletStatVal, { color: '#10B981' }]}>
-                +{profileData?.wallet?.totalReceived ?? 0} Mala
+                {profileData?.wallet?.totalReceived ?? 0} Mala
               </Text>
             </View>
 
@@ -243,7 +243,7 @@ export default function ProfileScreen() {
                 </Text>
               </View>
               <Text style={[styles.walletStatVal, { color: Colors.primary }]}>
-                -{profileData?.wallet?.totalSent ?? 0} Mala
+                {profileData?.wallet?.totalSent ?? 0} Mala
               </Text>
             </View>
           </View>

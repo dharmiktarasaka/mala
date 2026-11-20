@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,13 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { Colors } from '../../src/theme/colors';
 import { Header } from '../../src/components/Header';
 import { BeadCounter } from '../../src/components/BeadCounter';
 import { useCounterStore } from '../../src/store/counterStore';
 import { useThemeStore } from '../../src/store/themeStore';
+import { useAuthStore } from '../../src/store/authStore';
 import { apiClient } from '../../src/api/client';
 
 export default function CounterScreen() {
@@ -32,6 +34,39 @@ export default function CounterScreen() {
   } = useCounterStore();
 
   const [saving, setSaving] = useState(false);
+
+  const fetchLiveStatsAndWallet = async () => {
+    try {
+      const [statsRes, walletRes]: any = await Promise.allSettled([
+        apiClient.get('/counter/statistics'),
+        apiClient.get('/wallet/dashboard'),
+      ]);
+
+      if (statsRes.status === 'fulfilled' && statsRes.value?.data) {
+        setStatsFromServer(statsRes.value.data);
+      }
+      if (walletRes.status === 'fulfilled' && walletRes.value?.data) {
+        if (walletRes.value.data.balance !== undefined) {
+          useAuthStore.getState().updateWalletBalance(walletRes.value.data.balance);
+        }
+        if (walletRes.value.data.pockets) {
+          useAuthStore.getState().updatePockets(walletRes.value.data.pockets);
+        }
+      }
+    } catch {
+      // offline fallback
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveStatsAndWallet();
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchLiveStatsAndWallet();
+    }, [])
+  );
 
   const handleSaveSession = async () => {
     if (sessionCount <= 0) {

@@ -49,11 +49,11 @@ export class UsersService {
       createdAt: user.createdAt,
       profile: user.profile,
       wallet: {
-        balance: wallet?.balance ?? 108,
+        balance: wallet?.balance ?? 0,
         pockets: (wallet as any)?.pockets,
         totalReceived: wallet?.totalReceived ?? 0,
         totalSent: wallet?.totalSent ?? 0,
-        totalEarned: wallet?.totalEarned ?? 108,
+        totalEarned: wallet?.totalEarned ?? 0,
       },
       practiceStatistics: user.practiceStatistics,
       subscription: user.subscriptions?.[0] || { plan: 'FREE', status: 'ACTIVE' },

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   StyleSheet,
   RefreshControl,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../src/theme/colors';
 import { Header } from '../../src/components/Header';
@@ -34,6 +34,12 @@ export default function HomeDashboard() {
       const walletRes: any = await apiClient.get('/wallet/dashboard');
       if (walletRes.data) {
         setWalletData(walletRes.data);
+        if (walletRes.data.balance !== undefined) {
+          useAuthStore.getState().updateWalletBalance(walletRes.data.balance);
+        }
+        if (walletRes.data.pockets) {
+          useAuthStore.getState().updatePockets(walletRes.data.pockets);
+        }
       }
 
       // 2. Fetch practice counter statistics
@@ -49,6 +55,12 @@ export default function HomeDashboard() {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchDashboardData();
+    }, [])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);

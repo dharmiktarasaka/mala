@@ -98,10 +98,10 @@ export interface DevoteePockets {
 }
 
 export const DEFAULT_POCKETS: DevoteePockets = {
-  divya_mahamala: 18,
-  jackpot: 11,
-  ram_ram: 28,
-  extra: 10,
-  bonus: 11,
-  daily_sankalp: 30, // Sums to 108 Sacred Starter Mala
+  divya_mahamala: 0,
+  jackpot: 0,
+  ram_ram: 0,
+  extra: 0,
+  bonus: 0,
+  daily_sankalp: 0,
 };

@@ -31,16 +31,6 @@ export class WalletService {
       throw new NotFoundException('Wallet not found');
     }
 
-    // Seed 108 starter Mala if uninitialized
-    if (wallet.balance === 0 && (!wallet.totalEarned || wallet.totalEarned === 0) && (!wallet.totalSent || wallet.totalSent === 0)) {
-      wallet.balance = 108;
-      wallet.totalEarned = 108;
-      await this.prisma.wallet.update({
-        where: { id: wallet.id },
-        data: { balance: 108, totalEarned: 108 },
-      });
-    }
-
     const recentTransactions = await this.prisma.ledgerTransaction.findMany({
       where: {
         OR: [{ sourceWalletId: wallet.id }, { targetWalletId: wallet.id }],
@@ -182,16 +172,6 @@ export class WalletService {
 
     if (!wallet) {
       throw new NotFoundException('Wallet not found');
-    }
-
-    // Seed 108 starter Mala if uninitialized
-    if (wallet.balance === 0 && (!wallet.totalEarned || wallet.totalEarned === 0) && (!wallet.totalSent || wallet.totalSent === 0)) {
-      wallet.balance = 108;
-      wallet.totalEarned = 108;
-      await this.prisma.wallet.update({
-        where: { id: wallet.id },
-        data: { balance: 108, totalEarned: 108 },
-      });
     }
 
     const whereClause: any = {};

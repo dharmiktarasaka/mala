@@ -59,7 +59,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ item, onPress 
 
       <View style={styles.rightInfo}>
         <Text style={[styles.amountText, { color: amountColor }]}>
-          {amountPrefix}{item.amount} Mala
+          {item.amount} Mala
         </Text>
         <View style={[styles.statusBadge, { backgroundColor: '#E8F5E9' }]}>
           <Text style={styles.statusText}>{item.status}</Text>

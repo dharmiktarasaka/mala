@@ -17,8 +17,8 @@ export class CounterService {
           userId,
           currentDailyCount: 0,
           lifetimeCount: 0,
-          currentStreakDays: 1,
-          longestStreakDays: 1,
+          currentStreakDays: 0,
+          longestStreakDays: 0,
         },
       });
     }

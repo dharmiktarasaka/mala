@@ -384,8 +384,8 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({ compact = false }) =
       {/* Devotee Perks & Trust Badges Row */}
       <View style={styles.trustBadgesRow}>
         <View style={styles.trustItem}>
-          <Ionicons name="gift-outline" size={15} color="#FF7A00" />
-          <Text style={styles.trustText}>108 Starter Mala</Text>
+          <Ionicons name="sparkles-outline" size={15} color="#FF7A00" />
+          <Text style={styles.trustText}>Authentic Sadhana</Text>
         </View>
         <View style={styles.trustDivider} />
         <View style={styles.trustItem}>

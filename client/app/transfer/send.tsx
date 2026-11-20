@@ -36,7 +36,7 @@ export default function SendMalaScreen() {
 
   // Active pocket config if a specific pocket is selected
   const activePocketConfig = MALA_POCKETS.find((p) => p.id === selectedPocket);
-  const totalBalance = user?.walletBalance ?? 108;
+  const totalBalance = user?.walletBalance ?? 0;
   const pocketBalance = activePocketConfig
     ? ((user?.pockets as any)?.[activePocketConfig.id] ?? 0)
     : totalBalance;
@@ -178,6 +178,28 @@ export default function SendMalaScreen() {
             </View>
             <Text style={{ fontSize: 32 }}>{activePocketConfig ? activePocketConfig.symbol : '🕉️'}</Text>
           </View>
+          {currentAvailable === 0 && (
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/counter')}
+              style={{
+                marginTop: 10,
+                paddingVertical: 8,
+                paddingHorizontal: 12,
+                backgroundColor: '#FFF7ED',
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: '#FFEDD5',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Text style={{ fontSize: 12, color: Colors.primaryDark, fontWeight: '600' }}>
+                💡 Earn Mala by completing 108 beads on the Counter
+              </Text>
+              <Text style={{ fontSize: 12, color: Colors.primary, fontWeight: '700' }}>Chant ➔</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Real-time Inline Error Banner */}

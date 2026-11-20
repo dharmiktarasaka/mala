@@ -249,7 +249,7 @@ export default function RegisterScreen() {
               </Text>
               <Text style={styles.panelSubtitle}>
                 {mode === 'register'
-                  ? 'Join the global sangha & receive 108 Sacred Starter Mala instantly'
+                  ? 'Join the global sangha and begin your authentic digital sadhana'
                   : 'Access your mindful sadhana, digital mala & sacred ledger'}
               </Text>
             </View>
@@ -280,11 +280,11 @@ export default function RegisterScreen() {
                       </Text>
                     </View>
 
-                    {/* Starter Mala Gift Notice */}
+                    {/* Sacred Devotee Wallet Ready Notice */}
                     <View style={styles.starterMalaBanner}>
-                      <Ionicons name="gift" size={16} color="#FF7A00" />
+                      <Ionicons name="sparkles" size={16} color="#FF7A00" />
                       <Text style={styles.starterMalaText}>
-                        108 Sacred Starter Mala added to your spiritual wallet!
+                        Sacred Devotee Wallet initialized & double-entry protected!
                       </Text>
                     </View>
 
@@ -319,11 +319,11 @@ export default function RegisterScreen() {
                       </View>
                     ) : null}
 
-                    {/* Starter Mala Gift Badge */}
+                    {/* Sadhana Security Badge */}
                     <View style={styles.welcomeGiftBadge}>
-                      <Ionicons name="gift-outline" size={14} color="#9A3412" />
+                      <Ionicons name="shield-checkmark-outline" size={14} color="#9A3412" />
                       <Text style={styles.welcomeGiftText}>
-                        Includes 108 Sacred Starter Mala upon registration
+                        Authentic digital sadhana • Double-entry ledger protected
                       </Text>
                     </View>
 
