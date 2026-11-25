@@ -9,15 +9,14 @@ import {
   ScrollView,
   Platform,
   useWindowDimensions,
-  Animated,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../src/theme/colors';
 import { apiClient } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 import { OmSymbol } from '../../src/components/OmSymbol';
 import { AuthShowcase } from '../../src/components/AuthShowcase';
+import { WireframeBackground } from '../../src/components/WireframeBackground';
 
 export default function LoginScreen() {
   const { width } = useWindowDimensions();
@@ -173,500 +172,510 @@ export default function LoginScreen() {
   };
 
   return (
-    <ScrollView
-      contentContainerStyle={[
-        styles.scrollContainer,
-        isWide && styles.scrollContainerWide,
-      ]}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={[styles.mainLayout, isWide && styles.mainLayoutWide]}>
-        {/* ================= LEFT SIDE: WORKING FLOW & EXPLANATION ================= */}
-        {isWide ? (
-          <View style={styles.leftColumn}>
-            <AuthShowcase />
-          </View>
-        ) : (
-          <AuthShowcase compact />
-        )}
+    <View style={styles.rootWrapper}>
+      {/* High-tech Wireframe Geometric Background */}
+      <WireframeBackground />
 
-        {/* ================= RIGHT SIDE: AUTHENTICATION PANEL ================= */}
-        <View style={styles.rightColumn}>
-          <View style={styles.cardContainer}>
-            {/* Header Om badge on Mobile / Top Branding */}
-            {!isWide && (
-              <View style={styles.mobileOmHeader}>
-                <OmSymbol size={28} badgeSize={58} />
-              </View>
-            )}
-
-            {/* Segmented Mode Switcher */}
-            <View style={styles.tabSwitcher}>
-              <TouchableOpacity
-                onPress={() => {
-                  setMode('login');
-                  setLoginErrorMsg('');
-                }}
-                style={[
-                  styles.tabButton,
-                  mode === 'login' && styles.tabButtonActive,
-                ]}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name="log-in-outline"
-                  size={16}
-                  color={mode === 'login' ? Colors.primary : '#6B7280'}
-                  style={{ marginRight: 6 }}
-                />
-                <Text
-                  style={[
-                    styles.tabButtonText,
-                    mode === 'login' && styles.tabButtonTextActive,
-                  ]}
-                >
-                  Devotee Login
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => {
-                  setMode('register');
-                  setRegErrorMsg('');
-                }}
-                style={[
-                  styles.tabButton,
-                  mode === 'register' && styles.tabButtonActive,
-                ]}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name="person-add-outline"
-                  size={16}
-                  color={mode === 'register' ? Colors.primary : '#6B7280'}
-                  style={{ marginRight: 6 }}
-                />
-                <Text
-                  style={[
-                    styles.tabButtonText,
-                    mode === 'register' && styles.tabButtonTextActive,
-                  ]}
-                >
-                  New Devotee
-                </Text>
-              </TouchableOpacity>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContainer,
+          isWide && styles.scrollContainerWide,
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={[styles.mainLayout, isWide && styles.mainLayoutWide]}>
+          {/* ================= LEFT SIDE: WORKING FLOW & EXPLANATION ================= */}
+          {isWide ? (
+            <View style={styles.leftColumn}>
+              <AuthShowcase />
             </View>
+          ) : (
+            <AuthShowcase compact />
+          )}
 
-            {/* Subtitle */}
-            <View style={styles.panelTitleBox}>
-              <Text style={styles.panelTitle}>
-                {mode === 'login' ? 'Enter Sacred Sanctuary' : 'Register as Devotee'}
-              </Text>
-              <Text style={styles.panelSubtitle}>
-                {mode === 'login'
-                  ? 'Access your mindful sadhana, digital mala & sacred ledger'
-                  : 'Start your authentic digital sadhana with live bead counting & sacred pockets'}
-              </Text>
-            </View>
-
-            {/* ----------------- LOGIN FORM ----------------- */}
-            {mode === 'login' && (
-              <View style={styles.formContent}>
-                {/* Registration Welcome Banner */}
-                {registrationBanner ? (
-                  <View style={styles.successBox}>
-                    <Ionicons name="checkmark-circle" size={18} color="#166534" />
-                    <Text style={styles.successText}>{registrationBanner}</Text>
-                  </View>
-                ) : null}
-
-                {/* Error Banner */}
-                {loginErrorMsg ? (
-                  <View style={styles.errorBox}>
-                    <Ionicons name="alert-circle" size={18} color={Colors.error} />
-                    <View style={{ flex: 1, gap: 4 }}>
-                      <Text style={styles.errorText}>{loginErrorMsg}</Text>
-                      {loginErrorMsg.toLowerCase().includes('register') ||
-                      loginErrorMsg.toLowerCase().includes('not found') ? (
-                        <TouchableOpacity
-                          onPress={() => {
-                            setRegEmail(identifier.trim());
-                            setMode('register');
-                          }}
-                          style={styles.registerPromptBtn}
-                        >
-                          <Text style={styles.registerPromptBtnText}>
-                            Click here to Register this email first ➔
-                          </Text>
-                        </TouchableOpacity>
-                      ) : null}
-                    </View>
-                  </View>
-                ) : null}
-
-                {/* Email Field */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Devotee Email ID</Text>
-                  <View
-                    style={[
-                      styles.inputWrapper,
-                      focusedField === 'loginEmail' && styles.inputWrapperFocused,
-                    ]}
-                  >
-                    <Ionicons
-                      name="mail-outline"
-                      size={18}
-                      color={focusedField === 'loginEmail' ? Colors.primary : '#9CA3AF'}
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={styles.input}
-                      value={identifier}
-                      onChangeText={setIdentifier}
-                      placeholder="devotee@example.com"
-                      placeholderTextColor="#9CA3AF"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      keyboardType="email-address"
-                      onFocus={() => setFocusedField('loginEmail')}
-                      onBlur={() => setFocusedField(null)}
-                    />
-                  </View>
+          {/* ================= RIGHT SIDE: AUTHENTICATION PANEL ================= */}
+          <View style={styles.rightColumn}>
+            <View style={styles.cardContainer}>
+              {/* Header Om badge on Mobile / Top Branding */}
+              {!isWide && (
+                <View style={styles.mobileOmHeader}>
+                  <OmSymbol size={28} badgeSize={58} color="#4ADE80" />
                 </View>
+              )}
 
-                {/* Password Field */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Password</Text>
-                  <View
-                    style={[
-                      styles.inputWrapper,
-                      focusedField === 'loginPass' && styles.inputWrapperFocused,
-                    ]}
-                  >
-                    <Ionicons
-                      name="lock-closed-outline"
-                      size={18}
-                      color={focusedField === 'loginPass' ? Colors.primary : '#9CA3AF'}
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={styles.input}
-                      value={loginPassword}
-                      onChangeText={setLoginPassword}
-                      placeholder="••••••••"
-                      placeholderTextColor="#9CA3AF"
-                      secureTextEntry={!showLoginPassword}
-                      onFocus={() => setFocusedField('loginPass')}
-                      onBlur={() => setFocusedField(null)}
-                    />
-                    <TouchableOpacity
-                      onPress={() => setShowLoginPassword(!showLoginPassword)}
-                      style={styles.eyeBtn}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons
-                        name={showLoginPassword ? 'eye-off-outline' : 'eye-outline'}
-                        size={18}
-                        color="#6B7280"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* Submit Login Button */}
+              {/* Segmented Mode Switcher */}
+              <View style={styles.tabSwitcher}>
                 <TouchableOpacity
-                  onPress={handleLogin}
-                  disabled={loginLoading}
-                  style={[styles.submitBtn, loginLoading && { opacity: 0.7 }]}
-                  activeOpacity={0.88}
+                  onPress={() => {
+                    setMode('login');
+                    setLoginErrorMsg('');
+                  }}
+                  style={[
+                    styles.tabButton,
+                    mode === 'login' && styles.tabButtonActive,
+                  ]}
+                  activeOpacity={0.8}
                 >
-                  {loginLoading ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <>
-                      <Text style={styles.submitBtnText}>Enter Sanctuary</Text>
-                      <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-                    </>
-                  )}
+                  <Ionicons
+                    name="log-in-outline"
+                    size={16}
+                    color={mode === 'login' ? '#4ADE80' : '#94A3B8'}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text
+                    style={[
+                      styles.tabButtonText,
+                      mode === 'login' && styles.tabButtonTextActive,
+                    ]}
+                  >
+                    Devotee Login
+                  </Text>
                 </TouchableOpacity>
 
-                {/* Quick Toggle to Register */}
-                <View style={styles.bottomPrompt}>
-                  <Text style={styles.promptDesc}>
-                    New to digital sadhana?{' '}
-                    <Text
-                      style={styles.promptLink}
-                      onPress={() => {
-                        setMode('register');
-                        setRegErrorMsg('');
-                      }}
-                    >
-                      Create Devotee Account ➔
-                    </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setMode('register');
+                    setRegErrorMsg('');
+                  }}
+                  style={[
+                    styles.tabButton,
+                    mode === 'register' && styles.tabButtonActive,
+                  ]}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="person-add-outline"
+                    size={16}
+                    color={mode === 'register' ? '#4ADE80' : '#94A3B8'}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text
+                    style={[
+                      styles.tabButtonText,
+                      mode === 'register' && styles.tabButtonTextActive,
+                    ]}
+                  >
+                    New Devotee
                   </Text>
-                </View>
+                </TouchableOpacity>
               </View>
-            )}
 
-            {/* ----------------- REGISTER FORM ----------------- */}
-            {mode === 'register' && (
-              <View style={styles.formContent}>
-                {registeredUser ? (
-                  /* Celebration Success Box */
-                  <View style={styles.regSuccessCard}>
-                    <View style={styles.successIconBadge}>
-                      <Ionicons name="checkmark-circle" size={44} color="#166534" />
+              {/* Subtitle */}
+              <View style={styles.panelTitleBox}>
+                <Text style={styles.panelTitle}>
+                  {mode === 'login' ? 'Enter Sacred Sanctuary' : 'Register as Devotee'}
+                </Text>
+                <Text style={styles.panelSubtitle}>
+                  {mode === 'login'
+                    ? 'Access your mindful sadhana, 6 pockets & sacred ledger'
+                    : 'Start your authentic digital sadhana with live bead counting & sacred pockets'}
+                </Text>
+              </View>
+
+              {/* ----------------- LOGIN FORM ----------------- */}
+              {mode === 'login' && (
+                <View style={styles.formContent}>
+                  {/* Registration Welcome Banner */}
+                  {registrationBanner ? (
+                    <View style={styles.successBox}>
+                      <Ionicons name="checkmark-circle" size={18} color="#4ADE80" />
+                      <Text style={styles.successText}>{registrationBanner}</Text>
                     </View>
-                    <Text style={styles.successTitle}>Devotee Account Created! 🙏</Text>
-                    <Text style={styles.successSubtitle}>
-                      Welcome to the sacred sangha,{' '}
-                      <Text style={{ fontWeight: '800' }}>
-                        {registeredUser.user.displayName}
-                      </Text>
-                      !
-                    </Text>
+                  ) : null}
 
-                    {/* Allocated 6-digit Devotee ID Badge */}
-                    <View style={styles.allocatedIdBadge}>
-                      <Ionicons name="card-outline" size={18} color="#9A3412" />
-                      <Text style={styles.allocatedIdText}>
-                        Your Devotee ID: #{registeredUser.user.devoteeId || registeredUser.user.id}
-                      </Text>
+                  {/* Error Banner */}
+                  {loginErrorMsg ? (
+                    <View style={styles.errorBox}>
+                      <Ionicons name="alert-circle" size={18} color="#F87171" />
+                      <View style={{ flex: 1, gap: 4 }}>
+                        <Text style={styles.errorText}>{loginErrorMsg}</Text>
+                        {loginErrorMsg.toLowerCase().includes('register') ||
+                        loginErrorMsg.toLowerCase().includes('not found') ? (
+                          <TouchableOpacity
+                            onPress={() => {
+                              setRegEmail(identifier.trim());
+                              setMode('register');
+                            }}
+                            style={styles.registerPromptBtn}
+                          >
+                            <Text style={styles.registerPromptBtnText}>
+                              Click here to Register this email first ➔
+                            </Text>
+                          </TouchableOpacity>
+                        ) : null}
+                      </View>
                     </View>
+                  ) : null}
 
-                    {/* Sacred Devotee Wallet Ready Notice */}
-                    <View style={styles.starterMalaBanner}>
-                      <Ionicons name="sparkles" size={16} color="#FF7A00" />
-                      <Text style={styles.starterMalaText}>
-                        Sacred Devotee Wallet initialized & double-entry protected!
-                      </Text>
-                    </View>
-
-                    <TouchableOpacity
-                      style={styles.enterDirectlyBtn}
-                      onPress={proceedToSanctuary}
-                      activeOpacity={0.88}
+                  {/* Email Field */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Devotee Email ID</Text>
+                    <View
+                      style={[
+                        styles.inputWrapper,
+                        focusedField === 'loginEmail' && styles.inputWrapperFocused,
+                      ]}
                     >
-                      <Text style={styles.enterDirectlyBtnText}>Enter Sanctuary Directly</Text>
-                      <Ionicons name="sparkles" size={18} color="#FFFFFF" />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.loginInsteadBtn}
-                      onPress={() => {
-                        setIdentifier(registeredUser.user.email);
-                        setRegisteredUser(null);
-                        setMode('login');
-                      }}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.loginInsteadBtnText}>Or Log In with Email</Text>
-                    </TouchableOpacity>
+                      <Ionicons
+                        name="mail-outline"
+                        size={18}
+                        color={focusedField === 'loginEmail' ? '#4ADE80' : '#94A3B8'}
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={styles.input}
+                        value={identifier}
+                        onChangeText={setIdentifier}
+                        placeholder="devotee@example.com"
+                        placeholderTextColor="#64748B"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        keyboardType="email-address"
+                        onFocus={() => setFocusedField('loginEmail')}
+                        onBlur={() => setFocusedField(null)}
+                      />
+                    </View>
                   </View>
-                ) : (
-                  <>
-                    {/* Error Banner */}
-                    {regErrorMsg ? (
-                      <View style={styles.errorBox}>
-                        <Ionicons name="alert-circle" size={18} color={Colors.error} />
-                        <Text style={styles.errorText}>{regErrorMsg}</Text>
-                      </View>
-                    ) : null}
 
-                    {/* Sadhana Security Badge */}
-                    <View style={styles.welcomeGiftBadge}>
-                      <Ionicons name="shield-checkmark-outline" size={14} color="#9A3412" />
-                      <Text style={styles.welcomeGiftText}>
-                        Authentic digital sadhana • Double-entry ledger protected
+                  {/* Password Field */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Password</Text>
+                    <View
+                      style={[
+                        styles.inputWrapper,
+                        focusedField === 'loginPass' && styles.inputWrapperFocused,
+                      ]}
+                    >
+                      <Ionicons
+                        name="lock-closed-outline"
+                        size={18}
+                        color={focusedField === 'loginPass' ? '#4ADE80' : '#94A3B8'}
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={styles.input}
+                        value={loginPassword}
+                        onChangeText={setLoginPassword}
+                        placeholder="••••••••"
+                        placeholderTextColor="#64748B"
+                        secureTextEntry={!showLoginPassword}
+                        onFocus={() => setFocusedField('loginPass')}
+                        onBlur={() => setFocusedField(null)}
+                      />
+                      <TouchableOpacity
+                        onPress={() => setShowLoginPassword(!showLoginPassword)}
+                        style={styles.eyeBtn}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons
+                          name={showLoginPassword ? 'eye-off-outline' : 'eye-outline'}
+                          size={18}
+                          color="#94A3B8"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Submit Login Button */}
+                  <TouchableOpacity
+                    onPress={handleLogin}
+                    disabled={loginLoading}
+                    style={[styles.submitBtn, loginLoading && { opacity: 0.7 }]}
+                    activeOpacity={0.88}
+                  >
+                    {loginLoading ? (
+                      <ActivityIndicator color="#052E16" />
+                    ) : (
+                      <>
+                        <Text style={styles.submitBtnText}>Enter Sanctuary</Text>
+                        <Ionicons name="arrow-forward" size={18} color="#052E16" />
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  {/* Quick Toggle to Register */}
+                  <View style={styles.bottomPrompt}>
+                    <Text style={styles.promptDesc}>
+                      New to digital sadhana?{' '}
+                      <Text
+                        style={styles.promptLink}
+                        onPress={() => {
+                          setMode('register');
+                          setRegErrorMsg('');
+                        }}
+                      >
+                        Create Devotee Account ➔
                       </Text>
-                    </View>
+                    </Text>
+                  </View>
+                </View>
+              )}
 
-                    {/* Email Field */}
-                    <View style={styles.inputGroup}>
-                      <View style={styles.labelRow}>
-                        <Text style={styles.label}>Your Email ID *</Text>
-                        <Text style={styles.labelHint}>Used to sign in</Text>
+              {/* ----------------- REGISTER FORM ----------------- */}
+              {mode === 'register' && (
+                <View style={styles.formContent}>
+                  {registeredUser ? (
+                    /* Celebration Success Box */
+                    <View style={styles.regSuccessCard}>
+                      <View style={styles.successIconBadge}>
+                        <Ionicons name="checkmark-circle" size={44} color="#4ADE80" />
                       </View>
-                      <View
-                        style={[
-                          styles.inputWrapper,
-                          focusedField === 'regEmail' && styles.inputWrapperFocused,
-                        ]}
-                      >
-                        <Ionicons
-                          name="mail-outline"
-                          size={18}
-                          color={focusedField === 'regEmail' ? Colors.primary : '#9CA3AF'}
-                          style={styles.inputIcon}
-                        />
-                        <TextInput
-                          style={styles.input}
-                          value={regEmail}
-                          onChangeText={setRegEmail}
-                          placeholder="devotee@example.com"
-                          placeholderTextColor="#9CA3AF"
-                          keyboardType="email-address"
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                          onFocus={() => setFocusedField('regEmail')}
-                          onBlur={() => setFocusedField(null)}
-                        />
-                      </View>
-                    </View>
+                      <Text style={styles.successTitle}>Devotee Account Created! 🙏</Text>
+                      <Text style={styles.successSubtitle}>
+                        Welcome to the sacred sangha,{' '}
+                        <Text style={{ fontWeight: '800', color: '#FFFFFF' }}>
+                          {registeredUser.user.displayName}
+                        </Text>
+                        !
+                      </Text>
 
-                    {/* Full / Spiritual Name */}
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Full Name / Spiritual Name *</Text>
-                      <View
-                        style={[
-                          styles.inputWrapper,
-                          focusedField === 'regName' && styles.inputWrapperFocused,
-                        ]}
-                      >
-                        <Ionicons
-                          name="person-outline"
-                          size={18}
-                          color={focusedField === 'regName' ? Colors.primary : '#9CA3AF'}
-                          style={styles.inputIcon}
-                        />
-                        <TextInput
-                          style={styles.input}
-                          value={regDisplayName}
-                          onChangeText={setRegDisplayName}
-                          placeholder="e.g. Radha Devotee"
-                          placeholderTextColor="#9CA3AF"
-                          onFocus={() => setFocusedField('regName')}
-                          onBlur={() => setFocusedField(null)}
-                        />
+                      {/* Allocated 6-digit Devotee ID Badge */}
+                      <View style={styles.allocatedIdBadge}>
+                        <Ionicons name="card-outline" size={18} color="#4ADE80" />
+                        <Text style={styles.allocatedIdText}>
+                          Your Devotee ID: #{registeredUser.user.devoteeId || registeredUser.user.id}
+                        </Text>
                       </View>
-                    </View>
 
-                    {/* Password */}
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Password (Min 6 characters) *</Text>
-                      <View
-                        style={[
-                          styles.inputWrapper,
-                          focusedField === 'regPass' && styles.inputWrapperFocused,
-                        ]}
+                      {/* Sacred Devotee Wallet Ready Notice */}
+                      <View style={styles.starterMalaBanner}>
+                        <Ionicons name="sparkles" size={16} color="#F59E0B" />
+                        <Text style={styles.starterMalaText}>
+                          6 Sacred Pockets initialized & ledger protected!
+                        </Text>
+                      </View>
+
+                      <TouchableOpacity
+                        style={styles.enterDirectlyBtn}
+                        onPress={proceedToSanctuary}
+                        activeOpacity={0.88}
                       >
-                        <Ionicons
-                          name="lock-closed-outline"
-                          size={18}
-                          color={focusedField === 'regPass' ? Colors.primary : '#9CA3AF'}
-                          style={styles.inputIcon}
-                        />
-                        <TextInput
-                          style={styles.input}
-                          value={regPassword}
-                          onChangeText={setRegPassword}
-                          placeholder="••••••••"
-                          placeholderTextColor="#9CA3AF"
-                          secureTextEntry={!showRegPassword}
-                          onFocus={() => setFocusedField('regPass')}
-                          onBlur={() => setFocusedField(null)}
-                        />
-                        <TouchableOpacity
-                          onPress={() => setShowRegPassword(!showRegPassword)}
-                          style={styles.eyeBtn}
-                          activeOpacity={0.7}
+                        <Text style={styles.enterDirectlyBtnText}>Enter Sanctuary Directly</Text>
+                        <Ionicons name="sparkles" size={18} color="#052E16" />
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.loginInsteadBtn}
+                        onPress={() => {
+                          setIdentifier(registeredUser.user.email);
+                          setRegisteredUser(null);
+                          setMode('login');
+                        }}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.loginInsteadBtnText}>Or Log In with Email</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <>
+                      {/* Error Banner */}
+                      {regErrorMsg ? (
+                        <View style={styles.errorBox}>
+                          <Ionicons name="alert-circle" size={18} color="#F87171" />
+                          <Text style={styles.errorText}>{regErrorMsg}</Text>
+                        </View>
+                      ) : null}
+
+                      {/* Sadhana Security Badge */}
+                      <View style={styles.welcomeGiftBadge}>
+                        <Ionicons name="shield-checkmark-outline" size={14} color="#4ADE80" />
+                        <Text style={styles.welcomeGiftText}>
+                          Authentic 108 sadhana • 6 pockets • Double-entry protected
+                        </Text>
+                      </View>
+
+                      {/* Email Field */}
+                      <View style={styles.inputGroup}>
+                        <View style={styles.labelRow}>
+                          <Text style={styles.label}>Your Email ID *</Text>
+                          <Text style={styles.labelHint}>Used to sign in</Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.inputWrapper,
+                            focusedField === 'regEmail' && styles.inputWrapperFocused,
+                          ]}
                         >
                           <Ionicons
-                            name={showRegPassword ? 'eye-off-outline' : 'eye-outline'}
+                            name="mail-outline"
                             size={18}
-                            color="#6B7280"
+                            color={focusedField === 'regEmail' ? '#4ADE80' : '#94A3B8'}
+                            style={styles.inputIcon}
                           />
-                        </TouchableOpacity>
+                          <TextInput
+                            style={styles.input}
+                            value={regEmail}
+                            onChangeText={setRegEmail}
+                            placeholder="devotee@example.com"
+                            placeholderTextColor="#64748B"
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            onFocus={() => setFocusedField('regEmail')}
+                            onBlur={() => setFocusedField(null)}
+                          />
+                        </View>
                       </View>
-                    </View>
 
-                    {/* Optional Username */}
-                    <View style={styles.inputGroup}>
-                      <View style={styles.labelRow}>
-                        <Text style={styles.label}>Devotee Username (Optional)</Text>
-                        <Text style={styles.labelHint}>Auto-created if empty</Text>
-                      </View>
-                      <View
-                        style={[
-                          styles.inputWrapper,
-                          focusedField === 'regUser' && styles.inputWrapperFocused,
-                        ]}
-                      >
-                        <Ionicons
-                          name="at-outline"
-                          size={18}
-                          color={focusedField === 'regUser' ? Colors.primary : '#9CA3AF'}
-                          style={styles.inputIcon}
-                        />
-                        <TextInput
-                          style={styles.input}
-                          value={regUsername}
-                          onChangeText={setRegUsername}
-                          placeholder="e.g. bhakt_radha"
-                          placeholderTextColor="#9CA3AF"
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                          onFocus={() => setFocusedField('regUser')}
-                          onBlur={() => setFocusedField(null)}
-                        />
-                      </View>
-                    </View>
-
-                    {/* Submit Register Button */}
-                    <TouchableOpacity
-                      onPress={handleRegister}
-                      disabled={regLoading}
-                      style={[styles.submitBtn, regLoading && { opacity: 0.7 }]}
-                      activeOpacity={0.88}
-                    >
-                      {regLoading ? (
-                        <ActivityIndicator color="#FFFFFF" />
-                      ) : (
-                        <>
-                          <Text style={styles.submitBtnText}>Register Devotee Account</Text>
-                          <Ionicons name="sparkles" size={18} color="#FFFFFF" />
-                        </>
-                      )}
-                    </TouchableOpacity>
-
-                    {/* Quick Switch to Sign In */}
-                    <View style={styles.bottomPrompt}>
-                      <Text style={styles.promptDesc}>
-                        Already registered?{' '}
-                        <Text
-                          style={styles.promptLink}
-                          onPress={() => {
-                            setMode('login');
-                            setLoginErrorMsg('');
-                          }}
+                      {/* Full / Spiritual Name */}
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Full Name / Spiritual Name *</Text>
+                        <View
+                          style={[
+                            styles.inputWrapper,
+                            focusedField === 'regName' && styles.inputWrapperFocused,
+                          ]}
                         >
-                          Log in with your email ➔
-                        </Text>
-                      </Text>
-                    </View>
-                  </>
-                )}
-              </View>
-            )}
+                          <Ionicons
+                            name="person-outline"
+                            size={18}
+                            color={focusedField === 'regName' ? '#4ADE80' : '#94A3B8'}
+                            style={styles.inputIcon}
+                          />
+                          <TextInput
+                            style={styles.input}
+                            value={regDisplayName}
+                            onChangeText={setRegDisplayName}
+                            placeholder="e.g. Radha Devotee"
+                            placeholderTextColor="#64748B"
+                            onFocus={() => setFocusedField('regName')}
+                            onBlur={() => setFocusedField(null)}
+                          />
+                        </View>
+                      </View>
 
-            {/* Trust Footer */}
-            <View style={styles.cardFooter}>
-              <Ionicons name="shield-checkmark" size={14} color="#10B981" />
-              <Text style={styles.cardFooterText}>
-                Encrypted & Authenticated • MALA Sacred Sanctuary
-              </Text>
+                      {/* Password */}
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Password (Min 6 characters) *</Text>
+                        <View
+                          style={[
+                            styles.inputWrapper,
+                            focusedField === 'regPass' && styles.inputWrapperFocused,
+                          ]}
+                        >
+                          <Ionicons
+                            name="lock-closed-outline"
+                            size={18}
+                            color={focusedField === 'regPass' ? '#4ADE80' : '#94A3B8'}
+                            style={styles.inputIcon}
+                          />
+                          <TextInput
+                            style={styles.input}
+                            value={regPassword}
+                            onChangeText={setRegPassword}
+                            placeholder="••••••••"
+                            placeholderTextColor="#64748B"
+                            secureTextEntry={!showRegPassword}
+                            onFocus={() => setFocusedField('regPass')}
+                            onBlur={() => setFocusedField(null)}
+                          />
+                          <TouchableOpacity
+                            onPress={() => setShowRegPassword(!showRegPassword)}
+                            style={styles.eyeBtn}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons
+                              name={showRegPassword ? 'eye-off-outline' : 'eye-outline'}
+                              size={18}
+                              color="#94A3B8"
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+
+                      {/* Optional Username */}
+                      <View style={styles.inputGroup}>
+                        <View style={styles.labelRow}>
+                          <Text style={styles.label}>Devotee Username (Optional)</Text>
+                          <Text style={styles.labelHint}>Auto-created if empty</Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.inputWrapper,
+                            focusedField === 'regUser' && styles.inputWrapperFocused,
+                          ]}
+                        >
+                          <Ionicons
+                            name="at-outline"
+                            size={18}
+                            color={focusedField === 'regUser' ? '#4ADE80' : '#94A3B8'}
+                            style={styles.inputIcon}
+                          />
+                          <TextInput
+                            style={styles.input}
+                            value={regUsername}
+                            onChangeText={setRegUsername}
+                            placeholder="e.g. bhakt_radha"
+                            placeholderTextColor="#64748B"
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            onFocus={() => setFocusedField('regUser')}
+                            onBlur={() => setFocusedField(null)}
+                          />
+                        </View>
+                      </View>
+
+                      {/* Submit Register Button */}
+                      <TouchableOpacity
+                        onPress={handleRegister}
+                        disabled={regLoading}
+                        style={[styles.submitBtn, regLoading && { opacity: 0.7 }]}
+                        activeOpacity={0.88}
+                      >
+                        {regLoading ? (
+                          <ActivityIndicator color="#052E16" />
+                        ) : (
+                          <>
+                            <Text style={styles.submitBtnText}>Register Devotee Account</Text>
+                            <Ionicons name="sparkles" size={18} color="#052E16" />
+                          </>
+                        )}
+                      </TouchableOpacity>
+
+                      {/* Quick Switch to Sign In */}
+                      <View style={styles.bottomPrompt}>
+                        <Text style={styles.promptDesc}>
+                          Already registered?{' '}
+                          <Text
+                            style={styles.promptLink}
+                            onPress={() => {
+                              setMode('login');
+                              setLoginErrorMsg('');
+                            }}
+                          >
+                            Log in with your email ➔
+                          </Text>
+                        </Text>
+                      </View>
+                    </>
+                  )}
+                </View>
+              )}
+
+              {/* Trust Footer */}
+              <View style={styles.cardFooter}>
+                <Ionicons name="shield-checkmark" size={14} color="#4ADE80" />
+                <Text style={styles.cardFooterText}>
+                  Encrypted & Authenticated • MALA Sacred Sanctuary
+                </Text>
+              </View>
             </View>
           </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  rootWrapper: {
+    flex: 1,
+    backgroundColor: '#070A12',
+    position: 'relative',
+    minHeight: '100%',
+  },
   scrollContainer: {
     flexGrow: 1,
-    backgroundColor: '#FAF7F2',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
@@ -681,17 +690,18 @@ const styles = StyleSheet.create({
     maxWidth: 480,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 2,
   },
   mainLayoutWide: {
     flexDirection: 'row',
-    maxWidth: 1140,
+    maxWidth: 1160,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 36,
+    gap: 40,
   },
   leftColumn: {
     flex: 1.15,
-    maxWidth: 580,
+    maxWidth: 600,
   },
   rightColumn: {
     flex: 0.95,
@@ -700,16 +710,19 @@ const styles = StyleSheet.create({
   },
   cardContainer: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(13, 21, 38, 0.92)',
     borderRadius: 24,
     padding: 28,
-    borderWidth: 1.5,
-    borderColor: '#F3E8D8',
-    shadowColor: '#C47D17',
+    borderWidth: 1.2,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    shadowColor: '#4ADE80',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.09,
+    shadowOpacity: 0.16,
     shadowRadius: 28,
-    elevation: 5,
+    elevation: 8,
+    ...(Platform.OS === 'web'
+      ? ({ backdropFilter: 'blur(20px)' } as any)
+      : {}),
   },
   mobileOmHeader: {
     alignItems: 'center',
@@ -717,12 +730,12 @@ const styles = StyleSheet.create({
   },
   tabSwitcher: {
     flexDirection: 'row',
-    backgroundColor: '#F7F3EC',
+    backgroundColor: 'rgba(30, 41, 59, 0.7)',
     borderRadius: 14,
     padding: 4,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#EFE7DA',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   tabButton: {
     flex: 1,
@@ -733,35 +746,37 @@ const styles = StyleSheet.create({
     borderRadius: 11,
   },
   tabButtonActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#C47D17',
+    backgroundColor: 'rgba(74, 222, 128, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(74, 222, 128, 0.35)',
+    shadowColor: '#4ADE80',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.2,
     shadowRadius: 6,
-    elevation: 2,
   },
   tabButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#94A3B8',
   },
   tabButtonTextActive: {
-    color: '#1F2937',
+    color: '#4ADE80',
     fontWeight: '800',
   },
   panelTitleBox: {
     marginBottom: 18,
   },
   panelTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#1F2937',
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
   },
   panelSubtitle: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 3,
-    lineHeight: 17,
+    fontSize: 12.5,
+    color: '#94A3B8',
+    marginTop: 4,
+    lineHeight: 18,
   },
   formContent: {
     gap: 14,
@@ -770,15 +785,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#86EFAC',
+    borderColor: 'rgba(74, 222, 128, 0.35)',
     marginBottom: 4,
   },
   successText: {
-    color: '#166534',
+    color: '#4ADE80',
     fontSize: 12,
     fontWeight: '600',
     flex: 1,
@@ -787,21 +802,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
     marginBottom: 4,
   },
   errorText: {
-    color: '#B91C1C',
+    color: '#FCA5A5',
     fontSize: 12,
     fontWeight: '600',
     flex: 1,
   },
   registerPromptBtn: {
-    backgroundColor: '#FFE4E6',
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
     paddingVertical: 5,
     paddingHorizontal: 9,
     borderRadius: 6,
@@ -809,7 +824,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   registerPromptBtnText: {
-    color: Colors.primaryDark,
+    color: '#FCA5A5',
     fontSize: 11,
     fontWeight: '700',
   },
@@ -817,9 +832,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FFF7ED',
+    backgroundColor: 'rgba(74, 222, 128, 0.1)',
     borderWidth: 1,
-    borderColor: '#FED7AA',
+    borderColor: 'rgba(74, 222, 128, 0.25)',
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 10,
@@ -828,7 +843,7 @@ const styles = StyleSheet.create({
   welcomeGiftText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#9A3412',
+    color: '#86EFAC',
   },
   inputGroup: {
     gap: 5,
@@ -841,29 +856,32 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#374151',
+    color: '#E2E8F0',
   },
   labelHint: {
     fontSize: 10,
-    color: '#9CA3AF',
+    color: '#64748B',
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FAFAF9',
+    backgroundColor: 'rgba(15, 23, 42, 0.8)',
     borderWidth: 1.5,
-    borderColor: '#E7E5E4',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 48,
+    ...(Platform.OS === 'web'
+      ? ({ transition: 'border-color 0.2s, background-color 0.2s' } as any)
+      : {}),
   },
   inputWrapperFocused: {
-    borderColor: Colors.primary,
-    backgroundColor: '#FFFCF8',
-    shadowColor: Colors.primary,
+    borderColor: '#4ADE80',
+    backgroundColor: 'rgba(74, 222, 128, 0.07)',
+    shadowColor: '#4ADE80',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
   },
   inputIcon: {
     marginRight: 8,
@@ -871,7 +889,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 14,
-    color: '#1F2937',
+    color: '#FFFFFF',
     paddingVertical: 0,
     backgroundColor: 'transparent',
     borderWidth: 0,
@@ -892,19 +910,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.primary,
+    backgroundColor: '#22C55E',
     height: 48,
     borderRadius: 12,
     marginTop: 8,
-    shadowColor: Colors.primary,
+    shadowColor: '#22C55E',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 4,
   },
   submitBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
+    color: '#052E16',
+    fontWeight: '900',
     fontSize: 14,
     letterSpacing: 0.3,
   },
@@ -914,12 +932,12 @@ const styles = StyleSheet.create({
   },
   promptDesc: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#94A3B8',
     textAlign: 'center',
   },
   promptLink: {
-    color: Colors.primaryDark,
-    fontWeight: '700',
+    color: '#4ADE80',
+    fontWeight: '800',
   },
   // Register Success Card Styles
   regSuccessCard: {
@@ -931,28 +949,30 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#DCFCE7',
+    backgroundColor: 'rgba(74, 222, 128, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(74, 222, 128, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   successTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#166534',
+    color: '#4ADE80',
     textAlign: 'center',
   },
   successSubtitle: {
     fontSize: 13,
-    color: '#4B5563',
+    color: '#CBD5E1',
     textAlign: 'center',
   },
   allocatedIdBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FFF7ED',
+    backgroundColor: 'rgba(74, 222, 128, 0.12)',
     borderWidth: 1.5,
-    borderColor: '#FDBA74',
+    borderColor: 'rgba(74, 222, 128, 0.4)',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -962,15 +982,15 @@ const styles = StyleSheet.create({
   allocatedIdText: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#9A3412',
+    color: '#86EFAC',
   },
   starterMalaBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FEF3C7',
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
     borderWidth: 1,
-    borderColor: '#FDE68A',
+    borderColor: 'rgba(245, 158, 11, 0.3)',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -978,29 +998,33 @@ const styles = StyleSheet.create({
   starterMalaText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#92400E',
+    color: '#FDE68A',
   },
   enterDirectlyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.primary,
+    backgroundColor: '#22C55E',
     height: 48,
     borderRadius: 12,
     width: '100%',
     marginTop: 4,
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
   },
   enterDirectlyBtnText: {
-    color: '#FFFFFF',
+    color: '#052E16',
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   loginInsteadBtn: {
     paddingVertical: 6,
   },
   loginInsteadBtnText: {
-    color: '#6B7280',
+    color: '#94A3B8',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -1012,11 +1036,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: '#F3E8D8',
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
   },
   cardFooterText: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: '#64748B',
     fontWeight: '600',
   },
 });
