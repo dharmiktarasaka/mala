@@ -12,12 +12,15 @@ interface CounterState {
   vibrationEnabled: boolean;
   targetCompletedAnimation: boolean;
   selectedMalaType: MalaPocketId;
+  selectedDate: string; // YYYY-MM-DD
 
   increment: () => void;
   decrement: () => void;
   resetSession: () => void;
   setTarget: (target: number) => void;
   setSelectedMalaType: (type: MalaPocketId) => void;
+  setSelectedDate: (date: string) => void;
+  resetDateToToday: () => void;
   setStatsFromServer: (stats: {
     dailyCount: number;
     lifetimeCount: number;
@@ -27,6 +30,14 @@ interface CounterState {
   toggleVibration: () => void;
   dismissTargetAnimation: () => void;
 }
+
+const getTodayDateString = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 export const useCounterStore = create<CounterState>((set, get) => ({
   sessionCount: 0,
@@ -38,6 +49,7 @@ export const useCounterStore = create<CounterState>((set, get) => ({
   vibrationEnabled: true,
   targetCompletedAnimation: false,
   selectedMalaType: 'daily_sankalp',
+  selectedDate: getTodayDateString(),
 
   increment: () => {
     const { sessionCount, targetCount, dailyTotal, lifetimeTotal, vibrationEnabled } = get();
@@ -86,6 +98,10 @@ export const useCounterStore = create<CounterState>((set, get) => ({
   setTarget: (target) => set({ targetCount: target }),
 
   setSelectedMalaType: (type) => set({ selectedMalaType: type }),
+
+  setSelectedDate: (date: string) => set({ selectedDate: date }),
+
+  resetDateToToday: () => set({ selectedDate: getTodayDateString() }),
 
   setStatsFromServer: (stats) =>
     set({

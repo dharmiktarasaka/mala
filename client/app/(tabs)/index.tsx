@@ -95,14 +95,26 @@ export default function HomeDashboard() {
             </Text>
           </View>
 
-          {/* Quick Counter Shortcut Badge */}
-          <TouchableOpacity
-            onPress={() => router.push('/(tabs)/counter')}
-            style={styles.quickCountBadge}
-          >
-            <Ionicons name="flower" size={16} color="#FFFFFF" />
-            <Text style={styles.quickCountText}>Quick Count</Text>
-          </TouchableOpacity>
+          {/* Quick Shortcuts */}
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+            <TouchableOpacity
+              onPress={() => router.push({ pathname: '/(tabs)/counter', params: { view: 'calendar' } } as any)}
+              style={[styles.calendarBadge, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="calendar-outline" size={15} color={Colors.primary} />
+              <Text style={styles.calendarBadgeText}>Calendar</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/counter')}
+              style={styles.quickCountBadge}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="flower" size={16} color="#FFFFFF" />
+              <Text style={styles.quickCountText}>Quick Count</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Daily Mala Progress Card */}
@@ -277,6 +289,20 @@ const styles = StyleSheet.create({
   greetingName: {
     fontSize: 22,
     fontWeight: '800',
+  },
+  calendarBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  calendarBadgeText: {
+    color: Colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
   },
   quickCountBadge: {
     backgroundColor: Colors.primary,

@@ -906,12 +906,33 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     // Override MalaPracticeSession
     (this as any).malaPracticeSession = {
       create: async ({ data }: any) => {
-        const s = { id: `sess-${Date.now()}`, ...data };
+        const s = {
+          id: `sess-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          startedAt: data.startedAt ? new Date(data.startedAt) : new Date(),
+          completedAt: data.completedAt ? new Date(data.completedAt) : new Date(),
+          ...data,
+        };
         self.memorySessions.push(s);
+        self.saveToDisk();
         await self.saveToMongo('counter_sessions', s.id, s);
         return s;
       },
-      findMany: async ({ where }: any) => self.memorySessions.filter((s) => s.userId === where.userId),
+      findMany: async ({ where, orderBy, take }: any) => {
+        let list = self.memorySessions.filter((s) => s.userId === where.userId);
+        if (where?.startedAt) {
+          if (where.startedAt.gte) list = list.filter((s) => new Date(s.startedAt) >= new Date(where.startedAt.gte));
+          if (where.startedAt.lte) list = list.filter((s) => new Date(s.startedAt) <= new Date(where.startedAt.lte));
+        }
+        if (orderBy?.startedAt === 'desc') {
+          list = [...list].sort((a, b) => new Date(b.startedAt || 0).getTime() - new Date(a.startedAt || 0).getTime());
+        } else if (orderBy?.startedAt === 'asc') {
+          list = [...list].sort((a, b) => new Date(a.startedAt || 0).getTime() - new Date(b.startedAt || 0).getTime());
+        }
+        if (typeof take === 'number') {
+          list = list.slice(0, take);
+        }
+        return list;
+      },
     };
 
     // Override Friends

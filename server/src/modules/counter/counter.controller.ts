@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CounterService } from './counter.service';
-import { RecordSessionDto } from './dto/counter.dto';
+import { RecordSessionDto, LogDateDto } from './dto/counter.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser, RequestUser } from '../../common/decorators/current-user.decorator';
 
@@ -37,6 +37,26 @@ export class CounterController {
     return this.counterService.recordSession(user.userId, dto);
   }
 
+  @Get('calendar')
+  @ApiOperation({ summary: 'Get date-wise aggregated Mala count history by month (YYYY-MM)' })
+  @ApiQuery({ name: 'month', required: false, type: String, description: 'Month in YYYY-MM format' })
+  async getCalendar(
+    @CurrentUser() user: RequestUser,
+    @Query('month') month?: string,
+  ) {
+    return this.counterService.getCalendarData(user.userId, month);
+  }
+
+  @Post('log-date')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Directly save/log Mala count for a specific calendar date' })
+  async logMalaForDate(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: LogDateDto,
+  ) {
+    return this.counterService.logMalaForDate(user.userId, dto);
+  }
+
   @Get('history')
   @ApiOperation({ summary: 'Get counting history sessions' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -46,7 +66,7 @@ export class CounterController {
   ) {
     return this.counterService.getSessionHistory(
       user.userId,
-      limit ? parseInt(limit, 10) : 20,
+      limit ? parseInt(limit, 10) : 50,
     );
   }
 }
