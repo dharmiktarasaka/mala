@@ -9,8 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../theme/colors';
-import { OmSymbol } from './OmSymbol';
+import { NarayanPresenceMedallion, NarayanPresenceHeader } from './NarayanPresenceLogo';
 
 interface AuthShowcaseProps {
   compact?: boolean;
@@ -149,20 +148,11 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({
         {/* Top Glass Pill Badge */}
         <View style={styles.topBadgePill}>
           <View style={styles.glowingDot} />
-          <Text style={styles.topBadgeText}>THE SACRED SANCTUARY & DEVOTEE ENGINE</Text>
+          <Text style={styles.topBadgeText}>THE NARAYAN PRESENCE • SACRED SANCTUARY</Text>
         </View>
 
-        <View style={styles.compactHeaderRow}>
-          <View style={styles.compactOmWrapper}>
-            <OmSymbol size={26} badgeSize={50} color="#FF7A00" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.compactTitle}>
-              Digital Sadhana <Text style={styles.saffronItalicText}>& Devotion</Text>
-            </Text>
-            <Text style={styles.compactSub}>Mindful Japa • 6 Pockets • Sadhana Calendar</Text>
-          </View>
-        </View>
+        {/* Compact The Narayan Presence Header */}
+        <NarayanPresenceHeader compact />
 
         {/* Compact Step Indicator Card */}
         <View style={styles.compactStepCard}>
@@ -202,11 +192,14 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({
 
   return (
     <View style={styles.showcaseWrapper}>
-      {/* Top Glass Pill Badge matching Brand Saffron */}
+      {/* Top Glass Pill Badge with The Narayan Presence */}
       <View style={styles.topBadgePill}>
         <View style={styles.glowingDot} />
-        <Text style={styles.topBadgeText}>THE SACRED SANCTUARY & DEVOTEE ENGINE</Text>
+        <Text style={styles.topBadgeText}>THE NARAYAN PRESENCE • SACRED SANCTUARY</Text>
       </View>
+
+      {/* Prominent The Narayan Presence Branding Header */}
+      <NarayanPresenceHeader />
 
       {/* Main Bold Headline Section with Brand Saffron / Gold Highlight */}
       <View style={styles.heroSection}>
@@ -217,9 +210,9 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({
         </Text>
 
         <Text style={styles.heroDescription}>
-          Count authentic 108 beads with live audio & haptics. Store malas across 6 sacred
-          pockets, track daily progress on your Sadhana Calendar, and offer malas seamlessly with
-          immutable ledger security.
+          Under the divine presence of Narayan. Count authentic 108 beads with live audio &
+          haptics, store malas across 6 sacred pockets, track daily progress on your Sadhana
+          Calendar, and offer malas seamlessly with immutable ledger security.
         </Text>
       </View>
 
@@ -356,7 +349,7 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({
           "ॐ असतो मा सद्गमय । तमसो मा ज्योतिर्गमय ।"
         </Text>
         <Text style={styles.quoteTranslation}>
-          "Lead us from darkness to light. Chant with mindfulness, store in devotion, illuminate the path."
+          "Under the divine grace of The Narayan Presence. Chant with mindfulness, store in devotion, illuminate the path."
         </Text>
       </View>
     </View>
@@ -366,14 +359,14 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({
 const styles = StyleSheet.create({
   showcaseWrapper: {
     flex: 1,
-    paddingVertical: 20,
+    paddingVertical: 16,
     paddingHorizontal: 16,
     justifyContent: 'center',
     position: 'relative',
     maxWidth: 620,
   },
 
-  // Top Glass Pill Badge matching screenshot
+  // Top Glass Pill Badge with The Narayan Presence
   topBadgePill: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
@@ -385,7 +378,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
-    marginBottom: 20,
+    marginBottom: 16,
     ...(Platform.OS === 'web'
       ? ({ backdropFilter: 'blur(10px)' } as any)
       : {}),
@@ -401,29 +394,29 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   topBadgeText: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '800',
     color: '#E2E8F0',
-    letterSpacing: 1.2,
+    letterSpacing: 1.1,
   },
 
   // Main Headline Section
   heroSection: {
-    marginBottom: 22,
+    marginBottom: 20,
   },
   mainHeadline: {
-    fontSize: 34,
+    fontSize: 32,
     fontWeight: '900',
     color: '#FFFFFF',
     letterSpacing: -0.6,
-    lineHeight: 42,
+    lineHeight: 40,
   },
   subHeadlineScript: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: -0.4,
-    lineHeight: 38,
+    lineHeight: 36,
     marginTop: 2,
   },
   saffronItalicHighlight: {
@@ -435,10 +428,10 @@ const styles = StyleSheet.create({
     textShadowRadius: 18,
   },
   heroDescription: {
-    fontSize: 13.5,
+    fontSize: 13,
     color: '#94A3B8',
-    marginTop: 12,
-    lineHeight: 21,
+    marginTop: 10,
+    lineHeight: 20,
   },
 
   // Trust Badges Row
@@ -452,7 +445,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
-    marginBottom: 20,
+    marginBottom: 18,
     ...(Platform.OS === 'web'
       ? ({ backdropFilter: 'blur(10px)' } as any)
       : {}),
@@ -478,7 +471,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 14,
+    marginBottom: 12,
   },
   flowIconBox: {
     width: 24,
@@ -489,7 +482,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   flowHeaderTitle: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '800',
     color: '#E2E8F0',
     textTransform: 'uppercase',
@@ -522,7 +515,7 @@ const styles = StyleSheet.create({
   // Flow Steps List
   stepsContainer: {
     gap: 10,
-    marginBottom: 18,
+    marginBottom: 16,
   },
   stepCard: {
     flexDirection: 'row',
@@ -639,30 +632,6 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     width: '100%',
     maxWidth: 480,
-  },
-  compactHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
-  },
-  compactOmWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  compactTitle: {
-    fontSize: 19,
-    fontWeight: '900',
-    color: '#FFFFFF',
-  },
-  saffronItalicText: {
-    color: '#FFA347',
-    fontStyle: 'italic',
-  },
-  compactSub: {
-    fontSize: 11.5,
-    color: '#94A3B8',
-    marginTop: 2,
   },
   compactStepCard: {
     backgroundColor: 'rgba(15, 23, 42, 0.85)',

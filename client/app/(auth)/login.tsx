@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../src/theme/colors';
 import { apiClient } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
-import { OmSymbol } from '../../src/components/OmSymbol';
+import { NarayanPresenceMedallion } from '../../src/components/NarayanPresenceLogo';
 import { AuthShowcase } from '../../src/components/AuthShowcase';
 import { WireframeBackground } from '../../src/components/WireframeBackground';
 
@@ -197,12 +197,14 @@ export default function LoginScreen() {
           {/* ================= RIGHT SIDE: AUTHENTICATION PANEL ================= */}
           <View style={styles.rightColumn}>
             <View style={styles.cardContainer}>
-              {/* Header Om badge on Mobile */}
-              {!isWide && (
-                <View style={styles.mobileOmHeader}>
-                  <OmSymbol size={28} badgeSize={58} color="#FF7A00" />
-                </View>
-              )}
+              {/* The Narayan Presence Card Header */}
+              <View style={styles.cardBrandHeader}>
+                <NarayanPresenceMedallion size={isWide ? 52 : 46} />
+                <Text style={styles.cardBrandTitle}>
+                  The Narayan <Text style={styles.cardBrandGold}>Presence</Text>
+                </Text>
+                <Text style={styles.cardBrandSub}>Official Devotee Sanctuary</Text>
+              </View>
 
               {/* Segmented Mode Switcher */}
               <View style={styles.tabSwitcher}>
@@ -657,7 +659,7 @@ export default function LoginScreen() {
               <View style={styles.cardFooter}>
                 <Ionicons name="shield-checkmark" size={14} color="#FF7A00" />
                 <Text style={styles.cardFooterText}>
-                  Encrypted & Authenticated • MALA Sacred Sanctuary
+                  The Narayan Presence • Encrypted Sacred Ledger
                 </Text>
               </View>
             </View>
@@ -725,9 +727,26 @@ const styles = StyleSheet.create({
       ? ({ backdropFilter: 'blur(20px)' } as any)
       : {}),
   },
-  mobileOmHeader: {
+  cardBrandHeader: {
     alignItems: 'center',
     marginBottom: 16,
+  },
+  cardBrandTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginTop: 6,
+    letterSpacing: -0.2,
+    fontFamily: Platform.OS === 'web' ? 'Georgia, serif' : undefined,
+  },
+  cardBrandGold: {
+    color: '#D4AF37',
+    fontStyle: 'italic',
+  },
+  cardBrandSub: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 2,
   },
   tabSwitcher: {
     flexDirection: 'row',
