@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '../../src/theme/colors';
 import { apiClient } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 import { OmSymbol } from '../../src/components/OmSymbol';
@@ -173,7 +174,7 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.rootWrapper}>
-      {/* High-tech Wireframe Geometric Background */}
+      {/* High-tech Wireframe Saffron Background */}
       <WireframeBackground />
 
       <ScrollView
@@ -196,10 +197,10 @@ export default function LoginScreen() {
           {/* ================= RIGHT SIDE: AUTHENTICATION PANEL ================= */}
           <View style={styles.rightColumn}>
             <View style={styles.cardContainer}>
-              {/* Header Om badge on Mobile / Top Branding */}
+              {/* Header Om badge on Mobile */}
               {!isWide && (
                 <View style={styles.mobileOmHeader}>
-                  <OmSymbol size={28} badgeSize={58} color="#4ADE80" />
+                  <OmSymbol size={28} badgeSize={58} color="#FF7A00" />
                 </View>
               )}
 
@@ -219,7 +220,7 @@ export default function LoginScreen() {
                   <Ionicons
                     name="log-in-outline"
                     size={16}
-                    color={mode === 'login' ? '#4ADE80' : '#94A3B8'}
+                    color={mode === 'login' ? '#FF7A00' : '#94A3B8'}
                     style={{ marginRight: 6 }}
                   />
                   <Text
@@ -246,7 +247,7 @@ export default function LoginScreen() {
                   <Ionicons
                     name="person-add-outline"
                     size={16}
-                    color={mode === 'register' ? '#4ADE80' : '#94A3B8'}
+                    color={mode === 'register' ? '#FF7A00' : '#94A3B8'}
                     style={{ marginRight: 6 }}
                   />
                   <Text
@@ -278,7 +279,7 @@ export default function LoginScreen() {
                   {/* Registration Welcome Banner */}
                   {registrationBanner ? (
                     <View style={styles.successBox}>
-                      <Ionicons name="checkmark-circle" size={18} color="#4ADE80" />
+                      <Ionicons name="checkmark-circle" size={18} color="#FFA347" />
                       <Text style={styles.successText}>{registrationBanner}</Text>
                     </View>
                   ) : null}
@@ -319,7 +320,7 @@ export default function LoginScreen() {
                       <Ionicons
                         name="mail-outline"
                         size={18}
-                        color={focusedField === 'loginEmail' ? '#4ADE80' : '#94A3B8'}
+                        color={focusedField === 'loginEmail' ? '#FF7A00' : '#94A3B8'}
                         style={styles.inputIcon}
                       />
                       <TextInput
@@ -349,7 +350,7 @@ export default function LoginScreen() {
                       <Ionicons
                         name="lock-closed-outline"
                         size={18}
-                        color={focusedField === 'loginPass' ? '#4ADE80' : '#94A3B8'}
+                        color={focusedField === 'loginPass' ? '#FF7A00' : '#94A3B8'}
                         style={styles.inputIcon}
                       />
                       <TextInput
@@ -384,11 +385,11 @@ export default function LoginScreen() {
                     activeOpacity={0.88}
                   >
                     {loginLoading ? (
-                      <ActivityIndicator color="#052E16" />
+                      <ActivityIndicator color="#FFFFFF" />
                     ) : (
                       <>
                         <Text style={styles.submitBtnText}>Enter Sanctuary</Text>
-                        <Ionicons name="arrow-forward" size={18} color="#052E16" />
+                        <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
                       </>
                     )}
                   </TouchableOpacity>
@@ -418,7 +419,7 @@ export default function LoginScreen() {
                     /* Celebration Success Box */
                     <View style={styles.regSuccessCard}>
                       <View style={styles.successIconBadge}>
-                        <Ionicons name="checkmark-circle" size={44} color="#4ADE80" />
+                        <Ionicons name="checkmark-circle" size={44} color="#FF7A00" />
                       </View>
                       <Text style={styles.successTitle}>Devotee Account Created! 🙏</Text>
                       <Text style={styles.successSubtitle}>
@@ -431,7 +432,7 @@ export default function LoginScreen() {
 
                       {/* Allocated 6-digit Devotee ID Badge */}
                       <View style={styles.allocatedIdBadge}>
-                        <Ionicons name="card-outline" size={18} color="#4ADE80" />
+                        <Ionicons name="card-outline" size={18} color="#FF7A00" />
                         <Text style={styles.allocatedIdText}>
                           Your Devotee ID: #{registeredUser.user.devoteeId || registeredUser.user.id}
                         </Text>
@@ -439,7 +440,7 @@ export default function LoginScreen() {
 
                       {/* Sacred Devotee Wallet Ready Notice */}
                       <View style={styles.starterMalaBanner}>
-                        <Ionicons name="sparkles" size={16} color="#F59E0B" />
+                        <Ionicons name="sparkles" size={16} color="#D4AF37" />
                         <Text style={styles.starterMalaText}>
                           6 Sacred Pockets initialized & ledger protected!
                         </Text>
@@ -451,7 +452,7 @@ export default function LoginScreen() {
                         activeOpacity={0.88}
                       >
                         <Text style={styles.enterDirectlyBtnText}>Enter Sanctuary Directly</Text>
-                        <Ionicons name="sparkles" size={18} color="#052E16" />
+                        <Ionicons name="sparkles" size={18} color="#FFFFFF" />
                       </TouchableOpacity>
 
                       <TouchableOpacity
@@ -478,7 +479,7 @@ export default function LoginScreen() {
 
                       {/* Sadhana Security Badge */}
                       <View style={styles.welcomeGiftBadge}>
-                        <Ionicons name="shield-checkmark-outline" size={14} color="#4ADE80" />
+                        <Ionicons name="shield-checkmark-outline" size={14} color="#FF7A00" />
                         <Text style={styles.welcomeGiftText}>
                           Authentic 108 sadhana • 6 pockets • Double-entry protected
                         </Text>
@@ -499,7 +500,7 @@ export default function LoginScreen() {
                           <Ionicons
                             name="mail-outline"
                             size={18}
-                            color={focusedField === 'regEmail' ? '#4ADE80' : '#94A3B8'}
+                            color={focusedField === 'regEmail' ? '#FF7A00' : '#94A3B8'}
                             style={styles.inputIcon}
                           />
                           <TextInput
@@ -529,7 +530,7 @@ export default function LoginScreen() {
                           <Ionicons
                             name="person-outline"
                             size={18}
-                            color={focusedField === 'regName' ? '#4ADE80' : '#94A3B8'}
+                            color={focusedField === 'regName' ? '#FF7A00' : '#94A3B8'}
                             style={styles.inputIcon}
                           />
                           <TextInput
@@ -556,7 +557,7 @@ export default function LoginScreen() {
                           <Ionicons
                             name="lock-closed-outline"
                             size={18}
-                            color={focusedField === 'regPass' ? '#4ADE80' : '#94A3B8'}
+                            color={focusedField === 'regPass' ? '#FF7A00' : '#94A3B8'}
                             style={styles.inputIcon}
                           />
                           <TextInput
@@ -598,7 +599,7 @@ export default function LoginScreen() {
                           <Ionicons
                             name="at-outline"
                             size={18}
-                            color={focusedField === 'regUser' ? '#4ADE80' : '#94A3B8'}
+                            color={focusedField === 'regUser' ? '#FF7A00' : '#94A3B8'}
                             style={styles.inputIcon}
                           />
                           <TextInput
@@ -623,11 +624,11 @@ export default function LoginScreen() {
                         activeOpacity={0.88}
                       >
                         {regLoading ? (
-                          <ActivityIndicator color="#052E16" />
+                          <ActivityIndicator color="#FFFFFF" />
                         ) : (
                           <>
                             <Text style={styles.submitBtnText}>Register Devotee Account</Text>
-                            <Ionicons name="sparkles" size={18} color="#052E16" />
+                            <Ionicons name="sparkles" size={18} color="#FFFFFF" />
                           </>
                         )}
                       </TouchableOpacity>
@@ -654,7 +655,7 @@ export default function LoginScreen() {
 
               {/* Trust Footer */}
               <View style={styles.cardFooter}>
-                <Ionicons name="shield-checkmark" size={14} color="#4ADE80" />
+                <Ionicons name="shield-checkmark" size={14} color="#FF7A00" />
                 <Text style={styles.cardFooterText}>
                   Encrypted & Authenticated • MALA Sacred Sanctuary
                 </Text>
@@ -714,10 +715,10 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 28,
     borderWidth: 1.2,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    shadowColor: '#4ADE80',
+    borderColor: 'rgba(255, 122, 0, 0.22)',
+    shadowColor: '#FF7A00',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.16,
+    shadowOpacity: 0.22,
     shadowRadius: 28,
     elevation: 8,
     ...(Platform.OS === 'web'
@@ -746,12 +747,12 @@ const styles = StyleSheet.create({
     borderRadius: 11,
   },
   tabButtonActive: {
-    backgroundColor: 'rgba(74, 222, 128, 0.14)',
+    backgroundColor: 'rgba(255, 122, 0, 0.16)',
     borderWidth: 1,
-    borderColor: 'rgba(74, 222, 128, 0.35)',
-    shadowColor: '#4ADE80',
+    borderColor: 'rgba(255, 122, 0, 0.45)',
+    shadowColor: '#FF7A00',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.25,
     shadowRadius: 6,
   },
   tabButtonText: {
@@ -760,7 +761,7 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
   },
   tabButtonTextActive: {
-    color: '#4ADE80',
+    color: '#FFA347',
     fontWeight: '800',
   },
   panelTitleBox: {
@@ -785,15 +786,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    backgroundColor: 'rgba(255, 122, 0, 0.15)',
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(74, 222, 128, 0.35)',
+    borderColor: 'rgba(255, 122, 0, 0.35)',
     marginBottom: 4,
   },
   successText: {
-    color: '#4ADE80',
+    color: '#FFA347',
     fontSize: 12,
     fontWeight: '600',
     flex: 1,
@@ -832,9 +833,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(74, 222, 128, 0.1)',
+    backgroundColor: 'rgba(255, 122, 0, 0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(74, 222, 128, 0.25)',
+    borderColor: 'rgba(255, 122, 0, 0.3)',
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 10,
@@ -843,7 +844,7 @@ const styles = StyleSheet.create({
   welcomeGiftText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#86EFAC',
+    color: '#FFA347',
   },
   inputGroup: {
     gap: 5,
@@ -876,11 +877,11 @@ const styles = StyleSheet.create({
       : {}),
   },
   inputWrapperFocused: {
-    borderColor: '#4ADE80',
-    backgroundColor: 'rgba(74, 222, 128, 0.07)',
-    shadowColor: '#4ADE80',
+    borderColor: '#FF7A00',
+    backgroundColor: 'rgba(255, 122, 0, 0.08)',
+    shadowColor: '#FF7A00',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
   },
   inputIcon: {
@@ -910,18 +911,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#22C55E',
+    backgroundColor: '#FF7A00',
     height: 48,
     borderRadius: 12,
     marginTop: 8,
-    shadowColor: '#22C55E',
+    shadowColor: '#FF7A00',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
     elevation: 4,
   },
   submitBtnText: {
-    color: '#052E16',
+    color: '#FFFFFF',
     fontWeight: '900',
     fontSize: 14,
     letterSpacing: 0.3,
@@ -936,7 +937,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   promptLink: {
-    color: '#4ADE80',
+    color: '#FFA347',
     fontWeight: '800',
   },
   // Register Success Card Styles
@@ -949,16 +950,16 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: 'rgba(74, 222, 128, 0.15)',
+    backgroundColor: 'rgba(255, 122, 0, 0.16)',
     borderWidth: 1,
-    borderColor: 'rgba(74, 222, 128, 0.3)',
+    borderColor: 'rgba(255, 122, 0, 0.35)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   successTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#4ADE80',
+    color: '#FFA347',
     textAlign: 'center',
   },
   successSubtitle: {
@@ -970,9 +971,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(74, 222, 128, 0.12)',
+    backgroundColor: 'rgba(255, 122, 0, 0.14)',
     borderWidth: 1.5,
-    borderColor: 'rgba(74, 222, 128, 0.4)',
+    borderColor: 'rgba(255, 122, 0, 0.45)',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -982,15 +983,15 @@ const styles = StyleSheet.create({
   allocatedIdText: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#86EFAC',
+    color: '#FFA347',
   },
   starterMalaBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    backgroundColor: 'rgba(212, 175, 55, 0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.3)',
+    borderColor: 'rgba(212, 175, 55, 0.35)',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -1005,18 +1006,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#22C55E',
+    backgroundColor: '#FF7A00',
     height: 48,
     borderRadius: 12,
     width: '100%',
     marginTop: 4,
-    shadowColor: '#22C55E',
+    shadowColor: '#FF7A00',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
   },
   enterDirectlyBtnText: {
-    color: '#052E16',
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '900',
   },

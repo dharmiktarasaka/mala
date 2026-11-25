@@ -25,13 +25,12 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0.4)).current;
   const floatAnim1 = useRef(new Animated.Value(0)).current;
-  const floatAnim2 = useRef(new Animated.Value(0)).current;
 
   // Step highlight cycle
   const [activeStep, setActiveStep] = useState(0);
 
   useEffect(() => {
-    // Pulsating halo behind the sacred Om badge
+    // Pulsating halo
     const pulseLoop = Animated.loop(
       Animated.sequence([
         Animated.parallel([
@@ -107,7 +106,7 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({
         'Chant with authentic haptic bead feedback, traditional temple chimes, and automatic daily streak recording.',
       icon: 'flower-outline' as const,
       tag: '108 Beads = 1 Mala',
-      color: '#4ADE80',
+      color: '#FF7A00', // Brand Saffron
     },
     {
       id: 1,
@@ -118,7 +117,7 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({
         'Store and balance your malas across 6 dedicated spiritual pockets: Mahamala, Jackpot, Ram-Ram, Extra, Bonus, and Daily Sankalp.',
       icon: 'wallet-outline' as const,
       tag: '6 Sacred Pockets',
-      color: '#F59E0B',
+      color: '#D4AF37', // Brand Sacred Gold
     },
     {
       id: 2,
@@ -129,7 +128,7 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({
         'Record every day’s completed rounds on an interactive calendar. Review your streaks, total beads chanted, and personal spiritual notes.',
       icon: 'calendar-outline' as const,
       tag: 'Daily Calendar',
-      color: '#38BDF8',
+      color: '#FFA347', // Brand Saffron Light
     },
     {
       id: 3,
@@ -140,7 +139,7 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({
         'Gift and transfer sacred Mala to fellow seekers globally using their 6-digit Devotee ID (#108429) or username with immutable history.',
       icon: 'paper-plane-outline' as const,
       tag: 'Instant & Immutable',
-      color: '#A855F7',
+      color: '#F59E0B', // Amber Gold
     },
   ];
 
@@ -155,11 +154,11 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({
 
         <View style={styles.compactHeaderRow}>
           <View style={styles.compactOmWrapper}>
-            <OmSymbol size={26} badgeSize={50} color="#4ADE80" />
+            <OmSymbol size={26} badgeSize={50} color="#FF7A00" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.compactTitle}>
-              Digital Sadhana <Text style={styles.limeItalicText}>& Devotion</Text>
+              Digital Sadhana <Text style={styles.saffronItalicText}>& Devotion</Text>
             </Text>
             <Text style={styles.compactSub}>Mindful Japa • 6 Pockets • Sadhana Calendar</Text>
           </View>
@@ -189,7 +188,7 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({
                 style={[
                   styles.dot,
                   activeStep === idx && {
-                    backgroundColor: '#4ADE80',
+                    backgroundColor: '#FF7A00',
                     width: 20,
                   },
                 ]}
@@ -203,18 +202,18 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({
 
   return (
     <View style={styles.showcaseWrapper}>
-      {/* Top Glass Pill Badge (Identical to Screenshot) */}
+      {/* Top Glass Pill Badge matching Brand Saffron */}
       <View style={styles.topBadgePill}>
         <View style={styles.glowingDot} />
         <Text style={styles.topBadgeText}>THE SACRED SANCTUARY & DEVOTEE ENGINE</Text>
       </View>
 
-      {/* Main Bold Headline Section matching Screenshot Typography */}
+      {/* Main Bold Headline Section with Brand Saffron / Gold Highlight */}
       <View style={styles.heroSection}>
         <Text style={styles.mainHeadline}>Digital Sadhana for Devotees</Text>
         <Text style={styles.subHeadlineScript}>
           who want to be{' '}
-          <Text style={styles.limeItalicHighlight}>centered, connected & blessed.</Text>
+          <Text style={styles.saffronItalicHighlight}>centered, connected & blessed.</Text>
         </Text>
 
         <Text style={styles.heroDescription}>
@@ -224,20 +223,20 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({
         </Text>
       </View>
 
-      {/* Devotee Perks & Trust Badges Row */}
+      {/* Devotee Perks & Trust Badges Row in Brand Saffron/Gold */}
       <View style={styles.trustBadgesRow}>
         <View style={styles.trustItem}>
-          <Ionicons name="sparkles" size={14} color="#4ADE80" />
+          <Ionicons name="sparkles" size={14} color="#FF7A00" />
           <Text style={styles.trustText}>Authentic 108 Sadhana</Text>
         </View>
         <View style={styles.trustDivider} />
         <View style={styles.trustItem}>
-          <Ionicons name="wallet-outline" size={14} color="#F59E0B" />
+          <Ionicons name="wallet-outline" size={14} color="#D4AF37" />
           <Text style={styles.trustText}>6 Sacred Pockets</Text>
         </View>
         <View style={styles.trustDivider} />
         <View style={styles.trustItem}>
-          <Ionicons name="shield-checkmark" size={14} color="#38BDF8" />
+          <Ionicons name="shield-checkmark" size={14} color="#FFA347" />
           <Text style={styles.trustText}>Encrypted Ledger</Text>
         </View>
       </View>
@@ -245,7 +244,7 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({
       {/* Working Flow Section Header */}
       <View style={styles.flowHeaderRow}>
         <View style={styles.flowIconBox}>
-          <Ionicons name="git-network-outline" size={14} color="#4ADE80" />
+          <Ionicons name="git-network-outline" size={14} color="#FF7A00" />
         </View>
         <Text style={styles.flowHeaderTitle}>How Devotee Sanctuary Works</Text>
         <View style={styles.livePill}>
@@ -282,7 +281,7 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = ({
                   <Text
                     style={[
                       styles.stepBadgeText,
-                      { color: isActive ? '#052E16' : '#94A3B8' },
+                      { color: isActive ? '#FFFFFF' : '#94A3B8' },
                     ]}
                   >
                     {step.stepNumber}
@@ -382,7 +381,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(74, 222, 128, 0.25)',
+    borderColor: 'rgba(255, 122, 0, 0.35)',
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
@@ -395,8 +394,8 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: '#4ADE80',
-    shadowColor: '#4ADE80',
+    backgroundColor: '#FF7A00',
+    shadowColor: '#FF7A00',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.9,
     shadowRadius: 6,
@@ -427,13 +426,13 @@ const styles = StyleSheet.create({
     lineHeight: 38,
     marginTop: 2,
   },
-  limeItalicHighlight: {
-    color: '#4ADE80',
+  saffronItalicHighlight: {
+    color: '#FFA347',
     fontStyle: 'italic',
     fontWeight: '900',
-    textShadowColor: 'rgba(74, 222, 128, 0.4)',
+    textShadowColor: 'rgba(255, 122, 0, 0.5)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 16,
+    textShadowRadius: 18,
   },
   heroDescription: {
     fontSize: 13.5,
@@ -485,7 +484,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(74, 222, 128, 0.12)',
+    backgroundColor: 'rgba(255, 122, 0, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -500,9 +499,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    backgroundColor: 'rgba(255, 122, 0, 0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(74, 222, 128, 0.3)',
+    borderColor: 'rgba(255, 122, 0, 0.35)',
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -512,12 +511,12 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#4ADE80',
+    backgroundColor: '#FF7A00',
   },
   livePillText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#4ADE80',
+    color: '#FFA347',
   },
 
   // Flow Steps List
@@ -541,10 +540,10 @@ const styles = StyleSheet.create({
   },
   stepCardActive: {
     backgroundColor: 'rgba(15, 23, 42, 0.9)',
-    borderColor: '#4ADE80',
-    shadowColor: '#4ADE80',
+    borderColor: '#FF7A00',
+    shadowColor: '#FF7A00',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.25,
     shadowRadius: 10,
     transform: [{ translateX: 4 }],
   },
@@ -616,7 +615,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     backgroundColor: 'rgba(15, 23, 42, 0.55)',
     borderLeftWidth: 3,
-    borderLeftColor: '#4ADE80',
+    borderLeftColor: '#FF7A00',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.06)',
@@ -624,7 +623,7 @@ const styles = StyleSheet.create({
   sanskritQuote: {
     fontSize: 12.5,
     fontWeight: '800',
-    color: '#4ADE80',
+    color: '#FFA347',
     fontStyle: 'italic',
   },
   quoteTranslation: {
@@ -656,8 +655,8 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#FFFFFF',
   },
-  limeItalicText: {
-    color: '#4ADE80',
+  saffronItalicText: {
+    color: '#FFA347',
     fontStyle: 'italic',
   },
   compactSub: {
@@ -670,7 +669,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(74, 222, 128, 0.25)',
+    borderColor: 'rgba(255, 122, 0, 0.3)',
   },
   compactStepHeader: {
     flexDirection: 'row',
@@ -686,7 +685,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepNumberText: {
-    color: '#052E16',
+    color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '900',
   },
