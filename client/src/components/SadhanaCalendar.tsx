@@ -71,6 +71,7 @@ export const SadhanaCalendar: React.FC<SadhanaCalendarProps> = ({
   // Modal for logging Mala count for a date
   const [showLogModal, setShowLogModal] = useState(false);
   const [logMalaAmount, setLogMalaAmount] = useState('1'); // 1 Mala
+  const [logBeadsPerMala, setLogBeadsPerMala] = useState<number>(108); // 21 | 56 | 108
   const [logPocket, setLogPocket] = useState<MalaPocketId>('daily_sankalp');
   const [logNote, setLogNote] = useState('');
   const [submittingLog, setSubmittingLog] = useState(false);
@@ -151,10 +152,12 @@ export const SadhanaCalendar: React.FC<SadhanaCalendarProps> = ({
 
     setSubmittingLog(true);
     try {
+      const totalBeads = parsedMalas * logBeadsPerMala;
       const res: any = await apiClient.post('/counter/log-date', {
         date: selectedDate,
         malas: parsedMalas,
-        beads: parsedMalas * 108,
+        beads: totalBeads,
+        beadsPerMala: logBeadsPerMala,
         malaType: logPocket,
         note: logNote.trim() || undefined,
       });
@@ -170,7 +173,7 @@ export const SadhanaCalendar: React.FC<SadhanaCalendarProps> = ({
       setLogNote('');
       Alert.alert(
         'Sadhana Saved to Calendar! 🙏',
-        `Successfully logged ${parsedMalas} Mala (${parsedMalas * 108} beads) on ${selectedDate} to your ${logPocket.replace('_', ' ').toUpperCase()} pocket.`
+        `Successfully logged ${parsedMalas} Mala (${totalBeads} beads in ${logBeadsPerMala}-bead system) on ${selectedDate} to your ${logPocket.replace('_', ' ').toUpperCase()} pocket.`
       );
       fetchCalendar();
     } catch (err: any) {
@@ -443,7 +446,7 @@ export const SadhanaCalendar: React.FC<SadhanaCalendarProps> = ({
                 </View>
                 <View style={{ flex: 1, marginHorizontal: 8 }}>
                   <Text style={[styles.sessionBeadsText, { color: theme.textPrimary }]}>
-                    {sess.beadCount} beads ({Math.floor(sess.beadCount / 108) || 1} Mala)
+                    {sess.beadCount} beads ({sess.beadCount % 108 === 0 ? Math.floor(sess.beadCount / 108) : sess.beadCount % 56 === 0 ? Math.floor(sess.beadCount / 56) : sess.beadCount % 21 === 0 ? Math.floor(sess.beadCount / 21) : Math.floor(sess.beadCount / 108) || 1} Mala)
                   </Text>
                   {sess.note && (
                     <Text style={[styles.sessionNoteText, { color: Colors.accentGoldDark }]}>
@@ -506,9 +509,52 @@ export const SadhanaCalendar: React.FC<SadhanaCalendarProps> = ({
             </View>
 
             <ScrollView contentContainerStyle={styles.modalScroll}>
-              {/* Mala Amount Presets */}
+              {/* 3-System Mala Counting Options */}
               <Text style={[styles.modalFieldLabel, { color: theme.textPrimary }]}>
-                Number of Mala to Save (1 Mala = 108 beads)
+                Mala Counting System (1 Mala = {logBeadsPerMala} beads)
+              </Text>
+              <View style={styles.systemPickRow}>
+                {[
+                  { count: 21, label: '21 Beads', hindi: 'लघु (21)' },
+                  { count: 56, label: '56 Beads', hindi: 'छप्पन (56)' },
+                  { count: 108, label: '108 Beads', hindi: 'महामाला (108)' },
+                ].map((s) => {
+                  const isSys = logBeadsPerMala === s.count;
+                  return (
+                    <TouchableOpacity
+                      key={s.count}
+                      onPress={() => setLogBeadsPerMala(s.count)}
+                      style={[
+                        styles.systemPickBtn,
+                        isSys
+                          ? { backgroundColor: Colors.primary, borderColor: Colors.primary }
+                          : { backgroundColor: theme.surfaceSubtle, borderColor: theme.border },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.systemPickBtnTitle,
+                          { color: isSys ? '#FFFFFF' : theme.textPrimary },
+                        ]}
+                      >
+                        {s.label}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.systemPickBtnSub,
+                          { color: isSys ? '#FFEDD5' : theme.textSecondary },
+                        ]}
+                      >
+                        {s.hindi}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Mala Amount Presets */}
+              <Text style={[styles.modalFieldLabel, { color: theme.textPrimary, marginTop: 4 }]}>
+                Number of Mala to Save
               </Text>
               <View style={styles.presetsRow}>
                 {malaPresets.map((p) => (
@@ -546,7 +592,7 @@ export const SadhanaCalendar: React.FC<SadhanaCalendarProps> = ({
                   placeholderTextColor={theme.textMuted}
                 />
                 <Text style={{ fontSize: 12, color: theme.textSecondary, fontWeight: '700' }}>
-                  = {((parseInt(logMalaAmount, 10) || 0) * 108).toLocaleString()} Beads
+                  = {((parseInt(logMalaAmount, 10) || 0) * logBeadsPerMala).toLocaleString()} Beads ({logBeadsPerMala}b/Mala)
                 </Text>
               </View>
 
@@ -1001,6 +1047,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
+  },
+  systemPickRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 6,
+  },
+  systemPickBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  systemPickBtnTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  systemPickBtnSub: {
+    fontSize: 10,
+    fontWeight: '500',
+    marginTop: 2,
   },
   presetChip: {
     paddingHorizontal: 10,

@@ -5,6 +5,7 @@ import { MalaPocketId } from '../constants/malaTypes';
 interface CounterState {
   sessionCount: number;
   targetCount: number;
+  beadsPerMala: number; // 21 | 56 | 108
   dailyTotal: number;
   lifetimeTotal: number;
   streakDays: number;
@@ -18,6 +19,7 @@ interface CounterState {
   decrement: () => void;
   resetSession: () => void;
   setTarget: (target: number) => void;
+  setBeadsPerMala: (system: number) => void;
   setSelectedMalaType: (type: MalaPocketId) => void;
   setSelectedDate: (date: string) => void;
   resetDateToToday: () => void;
@@ -42,6 +44,7 @@ const getTodayDateString = () => {
 export const useCounterStore = create<CounterState>((set, get) => ({
   sessionCount: 0,
   targetCount: 108,
+  beadsPerMala: 108, // Default 108, supports 21, 56, 108
   dailyTotal: 0,
   lifetimeTotal: 0,
   streakDays: 0,
@@ -52,13 +55,14 @@ export const useCounterStore = create<CounterState>((set, get) => ({
   selectedDate: getTodayDateString(),
 
   increment: () => {
-    const { sessionCount, targetCount, dailyTotal, lifetimeTotal, vibrationEnabled } = get();
+    const { sessionCount, targetCount, beadsPerMala, dailyTotal, lifetimeTotal, vibrationEnabled } = get();
     const newSession = sessionCount + 1;
-    const isTargetReached = newSession === targetCount;
+    const isMalaCompleted = newSession % beadsPerMala === 0;
+    const isTargetReached = newSession >= targetCount && isMalaCompleted;
 
     if (vibrationEnabled) {
       try {
-        if (isTargetReached) {
+        if (isMalaCompleted || isTargetReached) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } else {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -72,7 +76,7 @@ export const useCounterStore = create<CounterState>((set, get) => ({
       sessionCount: newSession,
       dailyTotal: dailyTotal + 1,
       lifetimeTotal: lifetimeTotal + 1,
-      targetCompletedAnimation: isTargetReached,
+      targetCompletedAnimation: isMalaCompleted,
     });
   },
 
@@ -96,6 +100,15 @@ export const useCounterStore = create<CounterState>((set, get) => ({
   resetSession: () => set({ sessionCount: 0, targetCompletedAnimation: false }),
 
   setTarget: (target) => set({ targetCount: target }),
+
+  setBeadsPerMala: (system) => {
+    const validSystems = [21, 56, 108];
+    const newSystem = validSystems.includes(system) ? system : 108;
+    set((state) => ({
+      beadsPerMala: newSystem,
+      targetCount: [21, 56, 108].includes(state.targetCount) ? newSystem : state.targetCount,
+    }));
+  },
 
   setSelectedMalaType: (type) => set({ selectedMalaType: type }),
 

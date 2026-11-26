@@ -22,6 +22,8 @@ export const BeadCounter: React.FC<BeadCounterProps> = ({ onSaveSession }) => {
   const {
     sessionCount,
     targetCount,
+    beadsPerMala,
+    setBeadsPerMala,
     increment,
     decrement,
     resetSession,
@@ -39,8 +41,21 @@ export const BeadCounter: React.FC<BeadCounterProps> = ({ onSaveSession }) => {
   const activePocket = MALA_POCKETS.find((p) => p.id === selectedMalaType) || MALA_POCKETS[5];
   const pocketCount = (user?.pockets as any)?.[selectedMalaType] ?? 0;
 
-  const targets = [11, 21, 51, 108, 1008];
-  const progressPercent = Math.min(100, Math.round((sessionCount / targetCount) * 100));
+  const MALA_SYSTEMS = [
+    { count: 21, name: '21 Beads', hindi: 'लघु (21)', badge: '21' },
+    { count: 56, name: '56 Beads', hindi: 'छप्पन (56)', badge: '56' },
+    { count: 108, name: '108 Beads', hindi: 'महामाला (108)', badge: '108' },
+  ];
+
+  const targets = [1, 2, 5, 11, 21].map((m) => m * beadsPerMala);
+  const completedMalas = Math.floor(sessionCount / beadsPerMala);
+  const beadsInCurrentRound = sessionCount % beadsPerMala;
+  const roundPercent = Math.min(
+    100,
+    sessionCount > 0 && beadsInCurrentRound === 0
+      ? 100
+      : Math.round((beadsInCurrentRound / beadsPerMala) * 100)
+  );
 
   return (
     <View style={styles.container}>
@@ -142,13 +157,73 @@ export const BeadCounter: React.FC<BeadCounterProps> = ({ onSaveSession }) => {
         </View>
       </View>
 
+      {/* 3-System Mala Counting Mode (21 Beads, 56 Beads, 108 Beads) */}
+      <View style={styles.systemSection}>
+        <View style={styles.systemHeader}>
+          <Text style={[styles.systemTitle, { color: theme.textPrimary }]}>
+            Mala Counting System
+          </Text>
+          <View style={[styles.systemActivePill, { backgroundColor: activePocket.color }]}>
+            <Text style={styles.systemActivePillText}>
+              1 Mala = {beadsPerMala} Beads
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.systemOptionsRow}>
+          {MALA_SYSTEMS.map((sys) => {
+            const isSelected = beadsPerMala === sys.count;
+            return (
+              <TouchableOpacity
+                key={sys.count}
+                onPress={() => setBeadsPerMala(sys.count)}
+                activeOpacity={0.8}
+                style={[
+                  styles.systemOptionBtn,
+                  {
+                    backgroundColor: isSelected ? activePocket.bgLight : theme.surface,
+                    borderColor: isSelected ? activePocket.color : theme.border,
+                    borderWidth: isSelected ? 2 : 1,
+                  },
+                ]}
+              >
+                <View style={styles.systemBadgeRow}>
+                  <Text
+                    style={[
+                      styles.systemCountBadge,
+                      { color: isSelected ? activePocket.color : theme.textPrimary },
+                    ]}
+                  >
+                    {sys.badge}
+                  </Text>
+                  <Text style={{ fontSize: 13 }}>📿</Text>
+                </View>
+                <Text
+                  style={[
+                    styles.systemName,
+                    { color: isSelected ? activePocket.color : theme.textPrimary },
+                  ]}
+                >
+                  {sys.name}
+                </Text>
+                <Text style={[styles.systemHindi, { color: theme.textSecondary }]}>
+                  {sys.hindi}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
       {/* Target celebration banner */}
       {targetCompletedAnimation && (
         <View style={styles.celebrationCard}>
           <Text style={styles.celebrationOm}>🕉️ {activePocket.symbol} 🕉️</Text>
-          <Text style={styles.celebrationTitle}>Target Reached: {targetCount} Mala!</Text>
+          <Text style={styles.celebrationTitle}>
+            Mala Completed: {completedMalas || 1} Mala!
+          </Text>
           <Text style={styles.celebrationSub}>
-            Divine blessings credited to your {activePocket.title} Pocket!
+            {sessionCount} beads chanted under the {beadsPerMala}-bead system. Blessings credited to your {activePocket.title} Pocket!
           </Text>
           <TouchableOpacity onPress={dismissTargetAnimation} style={styles.dismissBtn}>
             <Text style={styles.dismissText}>Continue Sadhana</Text>
@@ -158,30 +233,37 @@ export const BeadCounter: React.FC<BeadCounterProps> = ({ onSaveSession }) => {
 
       {/* Target selector pills */}
       <View style={styles.targetsRow}>
-        {targets.map((tgt) => {
-          const isSelected = targetCount === tgt;
-          return (
-            <TouchableOpacity
-              key={tgt}
-              onPress={() => setTarget(tgt)}
-              style={[
-                styles.targetPill,
-                isSelected
-                  ? { backgroundColor: activePocket.color, borderColor: activePocket.color }
-                  : { backgroundColor: theme.surface, borderColor: theme.border },
-              ]}
-            >
-              <Text
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.targetsScroll}
+        >
+          {targets.map((tgt) => {
+            const isSelected = targetCount === tgt;
+            const targetMala = tgt / beadsPerMala;
+            return (
+              <TouchableOpacity
+                key={tgt}
+                onPress={() => setTarget(tgt)}
                 style={[
-                  styles.targetPillText,
-                  { color: isSelected ? '#FFFFFF' : theme.textSecondary },
+                  styles.targetPill,
+                  isSelected
+                    ? { backgroundColor: activePocket.color, borderColor: activePocket.color }
+                    : { backgroundColor: theme.surface, borderColor: theme.border },
                 ]}
               >
-                {tgt}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+                <Text
+                  style={[
+                    styles.targetPillText,
+                    { color: isSelected ? '#FFFFFF' : theme.textSecondary },
+                  ]}
+                >
+                  {targetMala} Mala ({tgt}b)
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* Main Circular Bead Counter Touch Target */}
@@ -202,12 +284,28 @@ export const BeadCounter: React.FC<BeadCounterProps> = ({ onSaveSession }) => {
               { backgroundColor: theme.surface, shadowColor: activePocket.color },
             ]}
           >
-            <Text style={[styles.targetSmall, { color: activePocket.color }]}>
-              {activePocket.title} • {t('target')}: {targetCount}
-            </Text>
+            <View
+              style={[
+                styles.completedMalaBadge,
+                {
+                  backgroundColor: activePocket.bgLight,
+                  borderColor: activePocket.borderColor,
+                },
+              ]}
+            >
+              <Text style={[styles.completedMalaBadgeText, { color: activePocket.color }]}>
+                📿 {completedMalas} Mala Completed
+              </Text>
+            </View>
+
             <Text style={[styles.largeCountNumber, { color: theme.textPrimary }]}>
               {sessionCount}
             </Text>
+
+            <Text style={[styles.roundBeadsText, { color: activePocket.color }]}>
+              Round: {beadsInCurrentRound} / {beadsPerMala} beads
+            </Text>
+
             <Text style={[styles.tapLabel, { color: theme.textSecondary }]}>
               {t('tapToCount')}
             </Text>
@@ -217,12 +315,12 @@ export const BeadCounter: React.FC<BeadCounterProps> = ({ onSaveSession }) => {
               <View
                 style={[
                   styles.progressBarFill,
-                  { width: `${progressPercent}%`, backgroundColor: activePocket.color },
+                  { width: `${roundPercent}%`, backgroundColor: activePocket.color },
                 ]}
               />
             </View>
             <Text style={[styles.progressText, { color: activePocket.color }]}>
-              {progressPercent}% Completed
+              {roundPercent}% of Round • Target: {Math.round(targetCount / beadsPerMala)} Mala
             </Text>
           </TouchableOpacity>
         </View>
@@ -397,10 +495,71 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     lineHeight: 15,
   },
-  targetsRow: {
+  systemSection: {
+    width: '100%',
+    marginBottom: 16,
+  },
+  systemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    marginBottom: 8,
+  },
+  systemTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  systemActivePill: {
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  systemActivePillText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  systemOptionsRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 20,
+  },
+  systemOptionBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  systemBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 2,
+  },
+  systemCountBadge: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  systemName: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 1,
+  },
+  systemHindi: {
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  targetsRow: {
+    width: '100%',
+    marginBottom: 18,
+  },
+  targetsScroll: {
+    gap: 8,
+    paddingHorizontal: 2,
   },
   targetPill: {
     paddingHorizontal: 14,
@@ -409,7 +568,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   targetPillText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
   },
   counterWrapper: {
@@ -438,21 +597,33 @@ const styles = StyleSheet.create({
     elevation: 8,
     padding: 16,
   },
-  targetSmall: {
-    fontSize: 13,
-    fontWeight: '600',
+  completedMalaBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
     marginBottom: 4,
   },
+  completedMalaBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
   largeCountNumber: {
-    fontSize: 68,
+    fontSize: 66,
     fontWeight: '800',
     letterSpacing: -1,
   },
-  tapLabel: {
+  roundBeadsText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '700',
     marginTop: 2,
-    marginBottom: 10,
+    marginBottom: 4,
+  },
+  tapLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginBottom: 8,
   },
   progressBarBg: {
     width: '70%',

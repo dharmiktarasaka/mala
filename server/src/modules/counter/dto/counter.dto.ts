@@ -43,6 +43,15 @@ export class RecordSessionDto {
 
   @ApiProperty({
     required: false,
+    description: 'System basis for 1 Mala count (e.g. 21, 56, or 108 beads)',
+    example: 108,
+  })
+  @IsInt()
+  @IsOptional()
+  beadsPerMala?: number;
+
+  @ApiProperty({
+    required: false,
     description: 'Custom date for this session (ISO format YYYY-MM-DD or YYYY-MM-DDTHH:mm:ssZ)',
     example: '2026-11-25',
   })
@@ -86,6 +95,15 @@ export class LogDateDto {
   @IsString()
   @IsOptional()
   malaType?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'System basis for 1 Mala count (e.g. 21, 56, or 108 beads)',
+    example: 108,
+  })
+  @IsInt()
+  @IsOptional()
+  beadsPerMala?: number;
 
   @ApiProperty({ required: false, description: 'Optional devotional note or mantra' })
   @IsString()

@@ -32,6 +32,7 @@ export default function CounterScreen() {
   const {
     sessionCount,
     targetCount,
+    beadsPerMala,
     dailyTotal,
     lifetimeTotal,
     streakDays,
@@ -97,9 +98,14 @@ export default function CounterScreen() {
 
     setSaving(true);
     try {
+      const earnedMala =
+        Math.floor(sessionCount / beadsPerMala) ||
+        (sessionCount >= targetCount ? 1 : 0);
+
       const res: any = await apiClient.post('/counter/session', {
         beadCount: sessionCount,
         targetCount,
+        beadsPerMala,
         durationSeconds: 120, // tracked duration
         completedTarget: sessionCount >= targetCount,
         soundEnabled,
@@ -122,7 +128,7 @@ export default function CounterScreen() {
       const dateLabel = isCustomDate ? selectedDate : 'Today';
       Alert.alert(
         'Sadhana Saved! 🙏',
-        `Successfully recorded ${sessionCount} Mala counts for ${dateLabel} and credited to your Sacred Mala Pocket.`,
+        `Successfully recorded ${earnedMala} Mala (${sessionCount} beads under the ${beadsPerMala}-bead system) for ${dateLabel} and credited to your Sacred Mala Pocket.`,
       );
     } catch (err: any) {
       Alert.alert(

@@ -146,8 +146,16 @@ export class CounterService {
       // 3. Trigger achievement evaluations
       await this.evaluatePracticeAchievements(tx, userId, updatedStats.lifetimeCount, newStreak);
 
-      // 4. Credit earned Mala to devotee wallet (1 Mala per 108 chants completed)
-      const earnedMala = Math.floor(dto.beadCount / 108) || (dto.completedTarget ? 1 : 0);
+      // 4. Credit earned Mala to devotee wallet (supports 3-system option: 21, 56, or 108 beads per Mala)
+      const validSystems = [21, 56, 108];
+      const systemBeads =
+        dto.beadsPerMala && validSystems.includes(dto.beadsPerMala)
+          ? dto.beadsPerMala
+          : dto.targetCount && validSystems.includes(dto.targetCount)
+          ? dto.targetCount
+          : 108;
+
+      const earnedMala = Math.floor(dto.beadCount / systemBeads) || (dto.completedTarget ? 1 : 0);
       let walletResult: any = null;
       if (earnedMala > 0) {
         try {
@@ -272,14 +280,20 @@ export class CounterService {
   }
 
   async logMalaForDate(userId: string, dto: LogDateDto) {
-    const malas = dto.malas || (dto.beads ? Math.floor(dto.beads / 108) : 1);
-    const beadCount = dto.beads || (malas * 108);
+    const validSystems = [21, 56, 108];
+    const systemBeads =
+      dto.beadsPerMala && validSystems.includes(dto.beadsPerMala)
+        ? dto.beadsPerMala
+        : 108;
+    const malas = dto.malas || (dto.beads ? Math.floor(dto.beads / systemBeads) : 1);
+    const beadCount = dto.beads || malas * systemBeads;
     const chosenType = dto.malaType || 'daily_sankalp';
     const targetDate = new Date(`${dto.date}T12:00:00Z`);
 
     return this.recordSession(userId, {
       beadCount,
       targetCount: beadCount,
+      beadsPerMala: systemBeads,
       durationSeconds: malas * 600,
       completedTarget: true,
       malaType: chosenType,
