@@ -50,10 +50,10 @@ export const MALA_POCKETS: MalaPocketConfig[] = [
   },
   {
     id: 'extra',
-    title: 'Extra Mala',
-    hindiTitle: 'एक्स्ट्रा माला',
-    subtitle: 'Overflow Sadhana',
-    description: 'Extra chanting beyond daily minimums to accelerate karmic purification and spiritual stamina.',
+    title: 'General',
+    hindiTitle: 'सामान्य',
+    subtitle: 'Samanya Sadhana',
+    description: 'General chanting for everyday sadhana and spiritual practice.',
     icon: 'add-circle-outline',
     color: '#F59E0B', // Radiant Amber
     bgLight: '#FFFBEB',
