@@ -38,6 +38,16 @@ export class UsersService {
       });
     }
 
+    if (user.profile?.bio && /Har Har Mahadev/i.test(user.profile.bio)) {
+      user.profile.bio = user.profile.bio.replace(/Har Har Mahadev/gi, 'Narayan Narayan');
+      this.prisma.userProfile
+        .update({
+          where: { userId },
+          data: { bio: user.profile.bio },
+        })
+        .catch(() => {});
+    }
+
     return {
       id: user.id,
       devoteeId: (user as any).devoteeId || user.id,

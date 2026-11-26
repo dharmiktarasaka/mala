@@ -20,7 +20,7 @@ export class Profile {
   @Prop({ default: 'Sadhak' })
   tradition: string;
 
-  @Prop({ default: 'Har Har Mahadev' })
+  @Prop({ default: 'Narayan Narayan' })
   favoriteMantra: string;
 
   @Prop({ default: 'en' })

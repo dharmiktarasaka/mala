@@ -236,8 +236,10 @@ export default function ProfileScreen() {
   };
 
   const handleOpenEditBio = () => {
+    const currentBio = (profileData?.profile?.bio || 'Narayan Narayan | Dedicated Mala Practitioner')
+      .replace(/Har Har Mahadev/gi, 'Narayan Narayan');
     setEditDisplayName(user?.displayName || profileData?.profile?.displayName || '');
-    setEditBio(profileData?.profile?.bio || 'Dedicated practitioner of Mindful Japa Meditation.');
+    setEditBio(currentBio);
     setShowEditBioModal(true);
   };
 
@@ -426,7 +428,8 @@ export default function ProfileScreen() {
           </View>
 
           <Text style={[styles.bio, { color: theme.textSecondary }]}>
-            {profileData?.profile?.bio || 'Dedicated practitioner of Mindful Japa Meditation.'}
+            {(profileData?.profile?.bio || 'Narayan Narayan | Dedicated Mala Practitioner')
+              .replace(/Har Har Mahadev/gi, 'Narayan Narayan')}
           </Text>
 
           <TouchableOpacity

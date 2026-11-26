@@ -82,7 +82,7 @@ export class SubscriptionsService {
 
     return {
       success: true,
-      message: 'Devotee Premium unlocked successfully! Har Har Mahadev.',
+      message: 'Devotee Premium unlocked successfully! Narayan Narayan.',
       subscription,
     };
   }

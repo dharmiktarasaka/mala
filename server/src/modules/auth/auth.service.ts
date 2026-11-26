@@ -81,7 +81,7 @@ export class AuthService {
         data: {
           userId: user.id,
           displayName: dto.displayName,
-          bio: 'Har Har Mahadev | Dedicated Mala Practitioner',
+          bio: 'Narayan Narayan | Dedicated Mala Practitioner',
         },
       });
 
