@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView, Image } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../src/theme/colors';
-import { OmSymbol } from '../../src/components/OmSymbol';
+import { NARAYAN_LOGO_DATA_URI } from '../../src/components/narayanLogoData';
 
 const { width } = Dimensions.get('window');
 
@@ -47,7 +47,13 @@ export default function OnboardingScreen() {
     <View style={styles.container}>
       {/* Top Brand Logo */}
       <View style={styles.topHeader}>
-        <OmSymbol size={32} badgeSize={64} />
+        <View style={styles.narayanOnboardingBadge}>
+          <Image
+            source={{ uri: NARAYAN_LOGO_DATA_URI }}
+            style={styles.narayanOnboardingLogo}
+            resizeMode="contain"
+          />
+        </View>
         <Text style={styles.brandTitle}>MALA</Text>
         <Text style={styles.brandTagline}>Sacred Digital Devotion</Text>
       </View>
@@ -110,6 +116,27 @@ const styles = StyleSheet.create({
   topHeader: {
     alignItems: 'center',
     marginTop: 36,
+  },
+  narayanOnboardingBadge: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#FED7AA',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  narayanOnboardingLogo: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
   },
   logoBadge: {
     width: 68,

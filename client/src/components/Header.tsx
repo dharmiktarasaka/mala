@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors } from '../theme/colors';
 import { useThemeStore } from '../store/themeStore';
-import { OmSymbol } from './OmSymbol';
+import { NARAYAN_LOGO_DATA_URI } from './narayanLogoData';
 
 interface HeaderProps {
   title?: string;
@@ -77,7 +77,15 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         <View style={styles.brandRow}>
-          {!showBack && <OmSymbol size={18} badgeSize={32} />}
+          {!showBack && (
+            <View style={styles.narayanNavBadge}>
+              <Image
+                source={{ uri: NARAYAN_LOGO_DATA_URI }}
+                style={styles.narayanNavImage}
+                resizeMode="contain"
+              />
+            </View>
+          )}
           <Text
             style={[
               styles.brandTitle,
@@ -141,16 +149,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  omBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.secondary,
+  narayanNavBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#FED7AA',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+    shadowColor: '#EA580C',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  omText: {
-    fontSize: 16,
+  narayanNavImage: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
   },
   brandTitle: {
     fontSize: 20,
