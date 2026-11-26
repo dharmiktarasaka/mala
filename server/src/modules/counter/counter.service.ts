@@ -244,6 +244,7 @@ export class CounterService {
               extra: 0,
               bonus: 0,
               daily_sankalp: 0,
+              daily_21: 0,
             },
             sessions: [],
           };

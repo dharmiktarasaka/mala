@@ -1,5 +1,5 @@
 export interface MalaPocketConfig {
-  id: 'divya_mahamala' | 'jackpot' | 'ram_ram' | 'extra' | 'bonus' | 'daily_sankalp';
+  id: 'divya_mahamala' | 'jackpot' | 'ram_ram' | 'extra' | 'bonus' | 'daily_sankalp' | 'daily_21';
   title: string;
   hindiTitle: string;
   subtitle: string;
@@ -84,6 +84,18 @@ export const MALA_POCKETS: MalaPocketConfig[] = [
     borderColor: '#BAE6FD',
     symbol: '🌅',
   },
+  {
+    id: 'daily_21',
+    title: 'Daily 21',
+    hindiTitle: 'दैनिक 21',
+    subtitle: '21 Bead Daily Practice',
+    description: 'Daily 21-bead mala practice for a quick, focused and consistent spiritual sadhana.',
+    icon: 'today-outline',
+    color: '#E11D48', // Devotional Rose
+    bgLight: '#FFF1F2',
+    borderColor: '#FECDD3',
+    symbol: '🌺',
+  },
 ];
 
 export type MalaPocketId = typeof MALA_POCKETS[number]['id'];
@@ -95,6 +107,7 @@ export interface DevoteePockets {
   extra: number;
   bonus: number;
   daily_sankalp: number;
+  daily_21: number;
 }
 
 export const DEFAULT_POCKETS: DevoteePockets = {
@@ -104,4 +117,5 @@ export const DEFAULT_POCKETS: DevoteePockets = {
   extra: 0,
   bonus: 0,
   daily_sankalp: 0,
+  daily_21: 0,
 };

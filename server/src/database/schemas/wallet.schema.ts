@@ -36,6 +36,7 @@ export class Wallet extends Document {
       extra: 0,
       bonus: 0,
       daily_sankalp: 0,
+      daily_21: 0,
     }),
   })
   pockets?: {
@@ -45,6 +46,7 @@ export class Wallet extends Document {
     extra: number;
     bonus: number;
     daily_sankalp: number;
+    daily_21: number;
   };
 }
 

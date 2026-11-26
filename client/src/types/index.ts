@@ -15,6 +15,7 @@ export interface User {
     extra: number;
     bonus: number;
     daily_sankalp: number;
+    daily_21: number;
   };
 }
 
@@ -40,6 +41,7 @@ export interface WalletDashboard {
     extra: number;
     bonus: number;
     daily_sankalp: number;
+    daily_21: number;
   };
   totalReceived: number;
   totalSent: number;

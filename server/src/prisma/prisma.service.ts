@@ -361,6 +361,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
               extra: 0,
               bonus: 0,
               daily_sankalp: 0,
+              daily_21: 0,
             },
             createdAt: new Date(),
           };
@@ -556,7 +557,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       },
     };
 
-    // Helper to ensure 6 Mala pockets are always initialized
+    // Helper to ensure 7 Mala pockets are always initialized
     const ensurePockets = (wallet: any) => {
       if (!wallet) return null;
       if (!wallet.pockets || typeof wallet.pockets !== 'object') {
@@ -567,6 +568,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           extra: 0,
           bonus: 0,
           daily_sankalp: 0,
+          daily_21: 0,
         };
       } else {
         wallet.pockets = {
@@ -576,6 +578,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           extra: Number(wallet.pockets.extra ?? 0),
           bonus: Number(wallet.pockets.bonus ?? 0),
           daily_sankalp: Number(wallet.pockets.daily_sankalp ?? 0),
+          daily_21: Number(wallet.pockets.daily_21 ?? 0),
         };
       }
       return wallet.pockets;
@@ -616,6 +619,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
               extra: 0,
               bonus: 0,
               daily_sankalp: 0,
+              daily_21: 0,
             },
             createdAt: new Date(),
           };
@@ -651,6 +655,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             extra: 0,
             bonus: 0,
             daily_sankalp: 0,
+            daily_21: 0,
           },
           ...data,
         };
@@ -726,7 +731,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
                 rem -= w.pockets[pocket];
                 w.pockets[pocket] = 0;
               }
-              for (const pk of ['daily_sankalp', 'ram_ram', 'bonus', 'extra', 'jackpot', 'divya_mahamala']) {
+              for (const pk of ['daily_sankalp', 'daily_21', 'ram_ram', 'bonus', 'extra', 'jackpot', 'divya_mahamala']) {
                 if (rem <= 0) break;
                 const c = w.pockets[pk] || 0;
                 const d = Math.min(c, rem);

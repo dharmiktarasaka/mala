@@ -22,7 +22,7 @@ export class TransferMalaDto {
     description: 'Pocket from which Mala should be offered',
     example: 'ram_ram',
     required: false,
-    enum: ['divya_mahamala', 'jackpot', 'ram_ram', 'extra', 'bonus', 'daily_sankalp'],
+    enum: ['divya_mahamala', 'jackpot', 'ram_ram', 'extra', 'bonus', 'daily_sankalp', 'daily_21'],
   })
   @IsString()
   @IsOptional()

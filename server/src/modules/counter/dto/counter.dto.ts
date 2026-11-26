@@ -33,7 +33,7 @@ export class RecordSessionDto {
 
   @ApiProperty({
     required: false,
-    enum: ['divya_mahamala', 'jackpot', 'ram_ram', 'extra', 'bonus', 'daily_sankalp'],
+    enum: ['divya_mahamala', 'jackpot', 'ram_ram', 'extra', 'bonus', 'daily_sankalp', 'daily_21'],
     default: 'daily_sankalp',
     description: 'Category / pocket for the Mala counted',
   })
@@ -88,7 +88,7 @@ export class LogDateDto {
 
   @ApiProperty({
     required: false,
-    enum: ['divya_mahamala', 'jackpot', 'ram_ram', 'extra', 'bonus', 'daily_sankalp'],
+    enum: ['divya_mahamala', 'jackpot', 'ram_ram', 'extra', 'bonus', 'daily_sankalp', 'daily_21'],
     default: 'daily_sankalp',
     description: 'Category / pocket for the Mala counted',
   })
