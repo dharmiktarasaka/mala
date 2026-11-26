@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as dns from 'dns';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -28,6 +29,10 @@ process.on('uncaughtException', (err: any) => {
 async function bootstrap() {
   const logger = new Logger('MalaPlatform');
   const app = await NestFactory.create(AppModule);
+
+  // Increase payload limit for base64 avatars and attachments
+  app.use(json({ limit: '10mb' }));
+  app.use(urlencoded({ limit: '10mb', extended: true }));
 
   // Enable graceful shutdown hooks for SIGTERM / SIGINT in containerized environments
   // app.enableShutdownHooks();

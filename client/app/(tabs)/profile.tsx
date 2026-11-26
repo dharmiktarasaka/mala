@@ -219,6 +219,10 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleSetNarayanPreset = () => {
+    saveAvatar(NARAYAN_LOGO_DATA_URI);
+  };
+
   const handleCopyDevoteeId = () => {
     const dId = user?.devoteeId || profileData?.devoteeId || user?.id || '';
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
