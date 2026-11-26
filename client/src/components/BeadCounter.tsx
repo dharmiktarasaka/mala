@@ -6,6 +6,7 @@ import { useCounterStore } from '../store/counterStore';
 import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
 import { MALA_POCKETS, MalaPocketId } from '../constants/malaTypes';
+import WebThreads from './WebThreads';
 
 const { width } = Dimensions.get('window');
 const COUNTER_SIZE = Math.min(width * 0.72, 280);
@@ -59,6 +60,23 @@ export const BeadCounter: React.FC<BeadCounterProps> = ({ onSaveSession }) => {
 
   return (
     <View style={styles.container}>
+      {/* Interactive WebThreads Cosmic Weave Background */}
+      <View style={styles.webThreadsBackground} pointerEvents="none">
+        <WebThreads
+          colors={['#FF7A00', '#5227FF', '#FF9FFC', '#FFA347', '#D4AF37']}
+          coreColor="#FFFFFF"
+          threadCount={7}
+          spread={0.25}
+          speed={0.22}
+          thickness={1.3}
+          glow={0.03}
+          brightness={0.7}
+          lightMode={mode === 'light'}
+          mouseInteraction={true}
+          pulseOnClick={true}
+        />
+      </View>
+
       {/* 6 Mala Jaap Categories & Pockets Selector Bar */}
       <View style={styles.pocketsSection}>
         <View style={styles.pocketsHeader}>
@@ -396,10 +414,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     paddingVertical: 12,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  webThreadsBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    zIndex: 0,
+    opacity: 0.88,
   },
   pocketsSection: {
     width: '100%',
     marginBottom: 16,
+    zIndex: 2,
   },
   pocketsHeader: {
     flexDirection: 'row',
@@ -498,6 +530,7 @@ const styles = StyleSheet.create({
   systemSection: {
     width: '100%',
     marginBottom: 16,
+    zIndex: 2,
   },
   systemHeader: {
     flexDirection: 'row',
@@ -556,6 +589,7 @@ const styles = StyleSheet.create({
   targetsRow: {
     width: '100%',
     marginBottom: 18,
+    zIndex: 2,
   },
   targetsScroll: {
     gap: 8,
@@ -575,6 +609,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: 12,
+    zIndex: 2,
   },
   beadRing: {
     width: COUNTER_SIZE + 24,
@@ -645,6 +680,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginTop: 20,
+    zIndex: 2,
   },
   controlBtn: {
     flexDirection: 'row',
@@ -669,6 +705,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 16,
     marginTop: 18,
+    zIndex: 2,
   },
   toggleItem: {
     flexDirection: 'row',
@@ -692,6 +729,7 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     marginBottom: 14,
+    zIndex: 5,
   },
   celebrationOm: {
     fontSize: 24,
