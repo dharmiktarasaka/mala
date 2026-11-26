@@ -85,8 +85,22 @@ const server = http.createServer((req, res) => {
   });
 });
 
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    const nextPort = Number(PORT) + 1;
+    console.warn(`\n[Notice] Port ${PORT} is currently in use. Trying port ${nextPort}...`);
+    server.listen(nextPort, '0.0.0.0', () => {
+      console.log(`\nMALA Web App listening on http://localhost:${nextPort}`);
+      console.log(`Serving files from: ${DIST_DIR}\n`);
+    });
+  } else {
+    console.error('Server error:', err);
+    process.exit(1);
+  }
+});
+
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`MALA Web App listening on http://localhost:${PORT}`);
-  console.log(`Serving files from: ${DIST_DIR}`);
+  console.log(`\nMALA Web App listening on http://localhost:${PORT}`);
+  console.log(`Serving files from: ${DIST_DIR}\n`);
 });
 
